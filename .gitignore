@@ -36,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Dynamic Types for Cloudflare Workers
 worker-configuration.d.ts
+
+# Wrangler Data
+.wrangler/
