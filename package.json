@@ -1,0 +1,16 @@
+{
+	"name": "github-discord-notification",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"types": "wrangler types",
+		"dev": "bun run types && wrangler dev",
+		"remote": "bun run types && wrangler dev --remote",
+		"deploy": "bun run types && wrangler deploy",
+		"tail": "wrangler tail"
+	},
+	"devDependencies": {
+		"wrangler": "^4.128.0",
+		"typescript": "^7.0.2"
+	}
+}

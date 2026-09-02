@@ -1,0 +1,24 @@
+name = "github-discord-notification"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "13f3e32b58594433802595e980685e25"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+redact_query_string = false
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
