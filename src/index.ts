@@ -324,7 +324,7 @@ interface StarEvent {
 	action: Selected<Action, "created" | "deleted">;
 	repository: Repository | null;
 	sender: User | null;
-	starred_at: string | nullz;
+	starred_at: string | null;
 }
 
 interface WatchEvent {
