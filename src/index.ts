@@ -74,17 +74,21 @@ const colorNames = [
 
 type ColorName = (typeof colorNames)[number];
 
-const color: Record<ColorName, number> = {
-	issue: 11239679,
-	pull_request: 16730819,
-	discussion: 3073714,
-	star: 16766208,
-	watch: 3861740,
-	fork: 5289727,
-	checked: 5364022,
-	attention: 16750885,
-	failure: 15869032,
-	dismissed: 10923446,
+function hexToNumber(hex: string): number {
+	return parseInt(hex.replace("#", ""), 16);
+}
+
+const colorList: Record<ColorName, string> = {
+	issue: "#AB80FF",
+	pull_request: "#FF4AC3",
+	discussion: "#2EE6B2",
+	star: "#FFD500",
+	watch: "#3AECEC",
+	fork: "#50B6FF",
+	checked: "#51D936",
+	attention: "#FF9925",
+	failure: "#F22468",
+	dismissed: "#A6ADB6",
 };
 
 const githubSupportedEvents = [
@@ -339,9 +343,192 @@ interface ForkEvent {
 	forkee: Repository | null;
 }
 
-async function processEvent(event: GitHubEvent, body: string, env: Env) {
+interface DiscordField {
+	name: string;
+	value: string;
+	inline?: boolean;
+}
+
+interface DiscordAuthor {
+	name: string;
+	url: string;
+	icon_url: string;
+}
+interface DiscordEmbed {
+	title: string;
+	description?: string;
+	color: number;
+	fields?: DiscordField[];
+	author: DiscordAuthor;
+	timestamp: string;
+}
+interface DiscordPost {
+	content?: string;
+	embeds?: DiscordEmbed[];
+	allowed_mentions?: { parse: [] };
+}
+
+async function fetchToDiscord(body: string, url: string): Promise<Response> {
+	return await fetch(url, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: body,
+	});
+}
+
+async function postToDiscord(
+	discordPost: DiscordPost,
+	env: Env,
+): Promise<void> {
+	const body = JSON.stringify(discordPost);
+	const url = env.DISCORD_WEBHOOK_URL;
+	let response = await fetchToDiscord(body, url);
+	let retries = 5;
+	while (response.status === 429 && retries > 0) {
+		const retryAfter = response.headers.get("Retry-After");
+		const wait = retryAfter ? parseFloat(retryAfter) * 1000 : 5000;
+		await new Promise((resolve) => setTimeout(resolve, wait));
+		response = await fetchToDiscord(body, url);
+		retries--;
+	}
+	if (!response.ok) {
+		const error = (await response.json()) as { message: string };
+		throw new Error(
+			`Discord API Error [${response.status}]: ${error.message}`,
+		);
+	}
+}
+
+const page404 = "https://github.com/404.html";
+const ghostPage = "https://github.com/Ghost";
+
+const orphanRepository = "orphaned-repository";
+
+const ghostUser: User = {
+	avatar_url: `${ghostPage}.png`,
+	html_url: ghostPage,
+	login: "ghost-user",
+};
+
+const nullRepository: Repository = {
+	name: orphanRepository,
+	full_name: `${ghostUser.login}/${orphanRepository}`,
+	owner: ghostUser,
+	created_at: new Date().toISOString(),
+	updated_at: new Date().toISOString(),
+	html_url: page404,
+	private: false,
+	stargazers_count: 0,
+	stargazers_url: page404,
+	subscribers_count: 0,
+	subscribers_url: page404,
+};
+
+function buildRepositoryField(repository: Repository): DiscordField {
+	return {
+		name: "Repository",
+		value: `[${repository.full_name}](${repository.html_url})`,
+	};
+}
+
+function buildAuthor(user: User): DiscordAuthor {
+	return {
+		name: user.login,
+		url: user.html_url,
+		icon_url: user.avatar_url,
+	};
+}
+
+async function handleStar(payload: unknown, env: Env): Promise<void> {
+	let { action, repository, sender, starred_at } = payload as StarEvent;
+	const ghostwriter = env.DISCORD_ROLE_ID;
+
+	if (!repository) repository = nullRepository;
+	if (!sender) sender = ghostUser;
+	if (!starred_at) starred_at = new Date().toISOString();
+	let content: string;
+	let title: string;
+	let color: number;
+
+	if (action === "created") {
+		content = `Your repository **${repository.name}** got a ⭐!\n${ghostwriter}`;
+		title = `${repository.name} has ${repository.stargazers_count} stars!`;
+		color = hexToNumber(colorList.star);
+	} else {
+		content = `Your repository **${repository.name}** lost a ⭐\n${ghostwriter}`;
+		title = `${repository.name} has \`-1\` star...`;
+		color = hexToNumber(colorList.dismissed);
+	}
+
+	const starsField: DiscordField = {
+		name: "Stars",
+		value: `${repository.stargazers_count}`,
+		inline: true,
+	};
+	const stargazersField: DiscordField = {
+		name: "Stargazers",
+		value: `[Direct link](${repository.stargazers_url})`,
+		inline: true,
+	};
+	const embeds: DiscordEmbed[] = [
+		{
+			title: title,
+			color: color,
+			fields: [
+				buildRepositoryField(repository),
+				starsField,
+				stargazersField,
+			],
+			author: buildAuthor(sender),
+			timestamp: starred_at,
+		},
+	];
+
+	await postToDiscord({ content }, env);
+	await postToDiscord({ embeds }, env);
+}
+
+async function processEvent(
+	event: GitHubEvent,
+	body: string,
+	env: Env,
+): Promise<void> {
 	const payload = JSON.parse(body);
-	console.log(payload.action);
+	switch (event) {
+		case "issues":
+			console.log("Received event:", event);
+			break;
+		case "issue_comment":
+			console.log("Received event:", event);
+			break;
+		case "pull_request":
+			console.log("Received event:", event);
+			break;
+		case "pull_request_review":
+			console.log("Received event:", event);
+			break;
+		case "pull_request_review_comment":
+			console.log("Received event:", event);
+			break;
+		case "discussion":
+			console.log("Received event:", event);
+			break;
+		case "discussion_comment":
+			console.log("Received event:", event);
+			break;
+		case "workflow_job":
+			console.log("Received event:", event);
+			break;
+		case "star":
+			await handleStar(payload, env);
+			break;
+		case "watch":
+			console.log("Received event:", event);
+			break;
+		case "fork":
+			console.log("Received event:", event);
+			break;
+	}
 }
 
 export default {

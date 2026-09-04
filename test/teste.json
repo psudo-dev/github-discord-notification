@@ -1,0 +1,197 @@
+{
+	"content": "[PR #5] **TypeScript-TmLanguage**\n_ _\n**[Bump js-yaml from 4.1.1 to 4.2.0](https://www.youtube.com/watch?v=eNOSgmHqIl0)**\n_ _\n**[João Tadeu](https://www.youtube.com/watch?v=eNOSgmHqIl0)**:_ _`ready for review`\n_ _\n**TypeScript-TmLanguage** lost a ⭐\n<@&1543824719214674000>",
+	"embeds": [
+		{
+			"title": "Repository",
+			"description": "RepositoryRepository",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Stars",
+					"value": "145",
+					"inline": true
+				},
+				{
+					"name": "Stargazers",
+					"value": "[Direct link](https://github.com/psudo-dev/psudofont-liga-mono/watchers)",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "\"Sync to Origin\" failed",
+			"description": "**Workflow**: Sync to Origin\n**Job**: Sync and check for changes\n**Step**: Sync fork with upstream\n**Status**: Failure\n\n**Complete job**\n\nNode.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+			"color": 15869032,
+			"fields": [
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Job's Full Log",
+					"value": "[sync-fork-and-check-for-changes/job-logs.txt](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "Sayid commented:",
+			"description": "The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. \n_ _\n```diff\n@@ -20,6 +20,11 @@\n function connect() {\n   const client = new Client();\n   client.connect();\n+\n+  if (!client.isConnected) {\n+    throw new Error('Database connection failed');\n+  }\n+\n   return client;\n }\n```",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Issue",
+					"value": "#2",
+					"inline": true
+				},
+				{
+					"name": "Status",
+					"value": "open",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "Upstream .tmLanguage changes detected",
+			"description": "Upstream changed the following .tmLanguage files:\n\n- TypeScript.tmLanguage\n- TypeScriptReact.tmLanguage\n\nCompare Here: [d50d9f7](https://github.com/psudo-dev/TypeScript-TmLanguage/compare/c7aa520a0e116e6325dcb616c559c26c928e7a95...a46e830cd814313af2d083975ff9404960811855)",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Head",
+					"value": "feature/bento-grid",
+					"inline": true
+				},
+				{
+					"name": "Base",
+					"value": "feature/bento-grid",
+					"inline": true
+				},
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Pull-Request",
+					"value": "#45",
+					"inline": true
+				},
+				{
+					"name": "Status",
+					"value": "open",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "(#45) Quem marcou a resposta",
+			"description": "Upstream changed the following .tmLanguage files:\n\n- TypeScript.tmLanguage\n- TypeScriptReact.tmLanguage\n\nCompare Here: [d50d9f7](https://github.com/psudo-dev/TypeScript-TmLanguage/compare/c7aa520a0e116e6325dcb616c559c26c928e7a95...a46e830cd814313af2d083975ff9404960811855)",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Discussion",
+					"value": "#45",
+					"inline": true
+				},
+				{
+					"name": "Category",
+					"value": "General",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "answer:",
+			"description": "Upstream changed the following .tmLanguage files:\n\n- TypeScript.tmLanguage\n- TypeScriptReact.tmLanguage\n\nCompare Here: [d50d9f7](https://github.com/psudo-dev/TypeScript-TmLanguage/compare/c7aa520a0e116e6325dcb616c559c26c928e7a95...a46e830cd814313af2d083975ff9404960811855)",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Answer",
+					"value": "[direct link](https://github.com/psudo-dev/TypeScript)",
+					"inline": true
+				},
+				{
+					"name": "State",
+					"value": "Answered",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		},
+		{
+			"title": "Sniddl commented:",
+			"description": "Upstream changed the following .tmLanguage files:\n\n- TypeScript.tmLanguage\n- TypeScriptReact.tmLanguage\n\nCompare Here: [d50d9f7](https://github.com/psudo-dev/TypeScript-TmLanguage/compare/c7aa520a0e116e6325dcb616c559c26c928e7a95...a46e830cd814313af2d083975ff9404960811855)",
+			"color": 5814783,
+			"fields": [
+				{
+					"name": "Repository",
+					"value": "[payload.repository.full_name](https://github.com/psudo-dev/TypeScript-TmLanguage)"
+				},
+				{
+					"name": "Discussion",
+					"value": "#45",
+					"inline": true
+				},
+				{
+					"name": "Category",
+					"value": "General",
+					"inline": true
+				}
+			],
+			"author": {
+				"name": "Sniddl",
+				"url": "https://github.com/Sniddl",
+				"icon_url": "https://github.com/Sniddl.png"
+			},
+			"timestamp": "2026-08-27T03:00:00.000Z"
+		}
+	],
+	"username": "GitHub",
+	"avatar_url": "https://cdn.discordapp.com/attachments/1542582420350435509/1542582420585320508/github-octocat.png?ex=6a926a14&is=6a911894&hm=3bac602bd15e62a4320d382ca59eba00f9edd8f3ee214bfc8db85474dfdf841d&",
+	"attachments": []
+}

@@ -1,0 +1,278 @@
+{
+	"action": "opened",
+
+	"number": 42,
+
+	"pull_request": {
+		"url": "https://api.github.com/repos/renatopsudo/nebula/pulls/42",
+		"id": 1234567890,
+		"node_id": "PR_kwDOABC1234",
+		"html_url": "https://github.com/renatopsudo/nebula/pull/42",
+		"diff_url": "https://github.com/renatopsudo/nebula/pull/42.diff",
+		"patch_url": "https://github.com/renatopsudo/nebula/pull/42.patch",
+
+		"issue_url": "https://api.github.com/repos/renatopsudo/nebula/issues/42",
+
+		"number": 42,
+
+		"state": "open",
+		"locked": false,
+		"title": "Add webhook event handling",
+		"body": "Implement handling for GitHub pull request webhook events.",
+
+		"user": {
+			"login": "renatopsudo",
+			"id": 10000001,
+			"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+			"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+			"gravatar_id": "",
+			"url": "https://api.github.com/users/renatopsudo",
+			"html_url": "https://github.com/renatopsudo",
+			"followers_url": "https://api.github.com/users/renatopsudo/followers",
+			"following_url": "https://api.github.com/users/renatopsudo/following{/other_user}",
+			"gists_url": "https://api.github.com/users/renatopsudo/gists{/gist_id}",
+			"starred_url": "https://api.github.com/users/renatopsudo/starred{/owner}{/repo}",
+			"subscriptions_url": "https://api.github.com/users/renatopsudo/subscriptions",
+			"organizations_url": "https://api.github.com/users/renatopsudo/orgs",
+			"repos_url": "https://api.github.com/users/renatopsudo/repos",
+			"events_url": "https://api.github.com/users/renatopsudo/events{/privacy}",
+			"received_events_url": "https://api.github.com/users/renatopsudo/received_events",
+			"type": "User",
+			"site_admin": false
+		},
+
+		"labels": [],
+
+		"milestone": null,
+
+		"assignee": null,
+		"assignees": [],
+
+		"requested_reviewers": [],
+
+		"requested_teams": [],
+
+		"head": {
+			"label": "renatopsudo:feature/webhook",
+			"ref": "feature/webhook",
+			"sha": "abc1234567890abcdef1234567890abcdef123456",
+			"user": {
+				"login": "renatopsudo",
+				"id": 10000001,
+				"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+				"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+				"gravatar_id": "",
+				"url": "https://api.github.com/users/renatopsudo",
+				"html_url": "https://github.com/renatopsudo",
+				"type": "User",
+				"site_admin": false
+			},
+			"repo": {
+				"id": 987654321,
+				"node_id": "R_kgDOExample",
+				"name": "nebula",
+				"full_name": "renatopsudo/nebula",
+				"private": false,
+				"owner": {
+					"login": "renatopsudo",
+					"id": 10000001,
+					"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+					"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+					"url": "https://api.github.com/users/renatopsudo",
+					"html_url": "https://github.com/renatopsudo",
+					"type": "User",
+					"site_admin": false
+				},
+				"html_url": "https://github.com/renatopsudo/nebula",
+				"url": "https://api.github.com/repos/renatopsudo/nebula"
+			}
+		},
+
+		"base": {
+			"label": "renatopsudo:main",
+			"ref": "main",
+			"sha": "def9876543210abcdef9876543210abcdef987654",
+			"user": {
+				"login": "renatopsudo",
+				"id": 10000001,
+				"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+				"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+				"url": "https://api.github.com/users/renatopsudo",
+				"html_url": "https://github.com/renatopsudo",
+				"type": "User",
+				"site_admin": false
+			},
+			"repo": {
+				"id": 987654321,
+				"node_id": "R_kgDOExample",
+				"name": "nebula",
+				"full_name": "renatopsudo/nebula",
+				"private": false,
+				"owner": {
+					"login": "renatopsudo",
+					"id": 10000001,
+					"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+					"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+					"url": "https://api.github.com/users/renatopsudo",
+					"html_url": "https://github.com/renatopsudo",
+					"type": "User",
+					"site_admin": false
+				},
+				"html_url": "https://github.com/renatopsudo/nebula",
+				"url": "https://api.github.com/repos/renatopsudo/nebula"
+			}
+		},
+
+		"created_at": "2026-08-30T20:00:00Z",
+		"updated_at": "2026-08-30T20:00:00Z",
+		"closed_at": null,
+		"merged_at": null,
+
+		"merge_commit_sha": null,
+
+		"mergeable": null,
+		"rebaseable": null,
+		"mergeable_state": "unknown",
+		"merged": false,
+
+		"comments": 0,
+		"review_comments": 0,
+		"additions": 150,
+		"deletions": 20,
+		"changed_files": 5,
+
+		"commits_url": "https://api.github.com/repos/renatopsudo/nebula/pulls/42/commits",
+		"review_comments_url": "https://api.github.com/repos/renatopsudo/nebula/pulls/42/comments",
+		"review_comment_url": "https://api.github.com/repos/renatopsudo/nebula/pulls/comments{/number}",
+		"comments_url": "https://api.github.com/repos/renatopsudo/nebula/issues/42/comments",
+		"statuses_url": "https://api.github.com/repos/renatopsudo/nebula/statuses/abc1234567890abcdef1234567890abcdef123456",
+
+		"author_association": "OWNER",
+
+		"auto_merge": null,
+		"active_lock_reason": null,
+
+		"draft": false,
+
+		"merged_by": null,
+
+		"allow_auto_merge": false,
+		"allow_update_branch": false,
+		"delete_branch_on_merge": false,
+
+		"squash_commits": false,
+
+		"merge_commit_message": null,
+		"merge_commit_title": null,
+
+		"squash_merge_commit_message": null,
+		"squash_merge_commit_title": null,
+
+		"use_squash_pr_title_as_default": false,
+
+		"maintainer_can_modify": true,
+
+		"commits": [
+			{
+				"sha": "abc1234567890abcdef1234567890abcdef123456",
+				"node_id": "C_kwDOExample",
+				"commit": {
+					"author": {
+						"name": "Renato",
+						"email": "renato@example.com",
+						"date": "2026-08-30T19:50:00Z"
+					},
+					"committer": {
+						"name": "Renato",
+						"email": "renato@example.com",
+						"date": "2026-08-30T19:50:00Z"
+					},
+					"message": "Add webhook event handling",
+					"tree": {
+						"sha": "tree1234567890abcdef1234567890abcdef123456",
+						"url": "https://api.github.com/repos/renatopsudo/nebula/git/trees/tree123456"
+					},
+					"url": "https://api.github.com/repos/renatopsudo/nebula/git/commits/abc1234567890abcdef1234567890abcdef123456",
+					"comment_count": 0
+				},
+				"url": "https://api.github.com/repos/renatopsudo/nebula/commits/abc1234567890abcdef1234567890abcdef123456"
+			}
+		]
+	},
+
+	"repository": {
+		"id": 987654321,
+		"node_id": "R_kgDOExample",
+		"name": "nebula",
+		"full_name": "renatopsudo/nebula",
+		"private": false,
+
+		"owner": {
+			"login": "renatopsudo",
+			"id": 10000001,
+			"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+			"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+			"url": "https://api.github.com/users/renatopsudo",
+			"html_url": "https://github.com/renatopsudo",
+			"type": "User",
+			"site_admin": false
+		},
+
+		"html_url": "https://github.com/renatopsudo/nebula",
+		"url": "https://api.github.com/repos/renatopsudo/nebula",
+
+		"description": "GitHub webhook integration project",
+
+		"fork": false,
+
+		"created_at": "2026-01-10T12:00:00Z",
+		"updated_at": "2026-08-30T20:00:00Z",
+		"pushed_at": "2026-08-30T19:50:00Z",
+
+		"size": 1024,
+		"stargazers_count": 12,
+		"watchers_count": 12,
+		"language": "TypeScript",
+
+		"forks_count": 2,
+		"open_issues_count": 3,
+
+		"default_branch": "main",
+
+		"visibility": "public",
+
+		"topics": ["github", "webhooks", "typescript"],
+
+		"has_issues": true,
+		"has_projects": true,
+		"has_wiki": false,
+		"has_pages": false,
+
+		"archived": false,
+		"disabled": false,
+
+		"allow_squash_merge": true,
+		"allow_merge_commit": true,
+		"allow_rebase_merge": true,
+
+		"license": {
+			"key": "mit",
+			"name": "MIT License",
+			"spdx_id": "MIT",
+			"url": "https://api.github.com/licenses/mit",
+			"node_id": "MDc6TGljZW5zZW1pdA=="
+		}
+	},
+
+	"sender": {
+		"login": "renatopsudo",
+		"id": 10000001,
+		"node_id": "MDQ6VXNlcjEwMDAwMDE=",
+		"avatar_url": "https://avatars.githubusercontent.com/u/10000001?v=4",
+		"gravatar_id": "",
+		"url": "https://api.github.com/users/renatopsudo",
+		"html_url": "https://github.com/renatopsudo",
+		"type": "User",
+		"site_admin": false
+	}
+}
