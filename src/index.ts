@@ -35,27 +35,6 @@ async function verifySignature(
 	return crypto.subtle.timingSafeEqual(a, b);
 }
 
-const eventActionPair: Record<GitHubEvent, Partial<Action>[]> = {
-	issues: ["opened", "reopened", "deleted", "closed"],
-	issue_comment: ["created", "deleted"],
-	pull_request: [
-		"opened",
-		"ready_for_review",
-		"reopened",
-		"synchronize",
-		"review_requested",
-		"review_request_removed",
-		"closed",
-	],
-	pull_request_review: ["submitted", "dismissed"],
-	pull_request_review_comment: ["created", "deleted"],
-	discussion: ["created", "deleted", "answered", "unanswered"],
-	discussion_comment: ["created", "deleted"],
-	workflow_job: ["completed"],
-	star: ["created", "deleted"],
-	fork: [],
-};
-
 type Selected<T, U extends T> = U;
 
 const colorNames = [
@@ -412,11 +391,7 @@ async function postToDiscord(
 		response = await fetchToDiscord(body, url);
 		retries--;
 	}
-	if (!response.ok) {
-		throw new Error(
-			`Discord API [${response.status} | ${response.statusText}]: ${JSON.stringify(await response.json())}`,
-		);
-	}
+	await handleError(response);
 }
 
 const page404 = "https://github.com/404.html";
@@ -523,8 +498,8 @@ function getStepsOrFallback(steps: Step[] | null): Step[] {
 	// 		return step;
 	// 	else return [];
 	// });
-	if (!steps) return [stepFallback];
-	return [steps[steps?.length - 1], stepFallback];
+	if (!steps || steps.length === 0) return [stepFallback];
+	return [steps[steps.length - 1], stepFallback];
 	// return relevantSteps ? relevantSteps : [stepFallback];
 }
 
@@ -560,8 +535,24 @@ async function getInstallationToken(
 		},
 	);
 
+	await handleError(response);
+
 	const data = (await response.json()) as { token: InstallationToken };
 	return data.token;
+}
+
+async function handleError(response: Response): Promise<void> {
+	if (!response.ok) {
+		let body: string;
+		try {
+			body = JSON.stringify(await response.json());
+		} catch {
+			body = await response.text();
+		}
+		throw new Error(
+			`Discord API [${response.status} | ${response.statusText}]: ${body}`,
+		);
+	}
 }
 
 const annotationFallback: Annotation = {
@@ -586,11 +577,13 @@ async function getAnnotationsOrFallback(
 		},
 	);
 
+	await handleError(response);
+
 	const annotations = (await response.json()) as Annotation[];
-	const relevantAnnotations = annotations.flatMap((annotation) => {
-		if (annotation.annotation_level === "failure") return annotation;
-		else return [];
-	});
+	// const relevantAnnotations = annotations.flatMap((annotation) => {
+	// 	if (annotation.annotation_level === "failure") return annotation;
+	// 	else return [];
+	// });
 	// const result =
 	// 	relevantAnnotations.length > 0
 	// 		? relevantAnnotations
@@ -669,8 +662,7 @@ async function handleWorkflowJob(payload: unknown, env: Env): Promise<void> {
 	${formattedSteps}
 	_ _
 	Check the **workflow/job**'s page [here](${workflow_job.html_url})!
-	${ghostwriter}
-	`;
+	${ghostwriter}`;
 
 	const headerAndPayload: string = generateHeaderAndPayload(env);
 	const jwt: string = await generateJwt(headerAndPayload, env);
@@ -744,7 +736,7 @@ async function processEvents(
 			console.log("Received event:", event);
 			break;
 		case "workflow_job":
-			handleWorkflowJob(payload, env);
+			await handleWorkflowJob(payload, env);
 			break;
 		case "star":
 			await handleStar(payload, env);
