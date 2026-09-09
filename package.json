@@ -10,7 +10,7 @@
 		"tail": "wrangler tail"
 	},
 	"devDependencies": {
-		"wrangler": "^4.128.0",
+		"wrangler": "^4.129.0",
 		"typescript": "^7.0.2"
 	}
 }
