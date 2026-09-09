@@ -1,6 +1,7 @@
 name = "github-discord-notification"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
+upload_source_maps = true
 
 [[kv_namespaces]]
 binding = "KV"
