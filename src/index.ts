@@ -53,7 +53,6 @@ const eventActionPair: Record<GitHubEvent, Partial<Action>[]> = {
 	discussion_comment: ["created", "deleted"],
 	workflow_job: ["completed"],
 	star: ["created", "deleted"],
-	watch: ["started"],
 	fork: [],
 };
 
@@ -64,7 +63,6 @@ const colorNames = [
 	"pull_request",
 	"discussion",
 	"star",
-	"watch",
 	"fork",
 	"checked",
 	"attention",
@@ -83,7 +81,6 @@ const colorList: Record<ColorName, string> = {
 	pull_request: "#FF4AC3",
 	discussion: "#2EE6B2",
 	star: "#FFD500",
-	watch: "#3AECEC",
 	fork: "#50B6FF",
 	checked: "#51D936",
 	attention: "#FF9925",
@@ -101,7 +98,6 @@ const githubSupportedEvents = [
 	"discussion_comment",
 	"workflow_job",
 	"star",
-	"watch",
 	"fork",
 ] as const;
 
@@ -129,7 +125,6 @@ const eventAction = [
 	"answered",
 	"unanswered",
 	"completed",
-	"started",
 ] as const;
 
 type Action = (typeof eventAction)[number];
@@ -300,28 +295,56 @@ interface DiscussionCommentEvent {
 }
 
 interface Annotation {
-	title: string;
+	title: string | null;
 	message: string;
 	annotation_level: "notice" | "warning" | "failure";
 }
-interface Steps {
-	conclusion: "failure" | "skipped" | "success" | "cancelled" | null;
+
+const stepConclusions = [
+	"failure",
+	"skipped",
+	"success",
+	"cancelled",
+	null,
+] as const;
+
+type StepConclusion = (typeof stepConclusions)[number];
+
+interface Step {
+	conclusion: StepConclusion | string;
 	name: string;
 }
+
+const workflowJobConclusion = [
+	"failure",
+	"cancelled",
+	"timed_out",
+	"action_required",
+] as const;
+
+type WorkflowJobConclusion = (typeof workflowJobConclusion)[number];
+
 interface WorkflowJob {
 	completed_at: string;
-	conclusion: "failure" | "cancelled" | "timed_out" | "action_required";
+	conclusion: WorkflowJobConclusion;
 	id: number;
 	html_url: string;
 	name: string;
 	workflow_name: string;
-	steps: Steps[] | null;
+	steps: Step[] | null;
 }
+
+interface Installation {
+	id: number;
+	node_id: string;
+}
+
 interface WorkflowJobEvent {
 	action: Selected<Action, "completed">;
 	repository: Repository | null;
 	sender: User | null;
 	workflow_job: WorkflowJob;
+	installation: Installation;
 }
 
 interface StarEvent {
@@ -329,12 +352,6 @@ interface StarEvent {
 	repository: Repository | null;
 	sender: User | null;
 	starred_at: string | null;
-}
-
-interface WatchEvent {
-	action: Selected<Action, "started">;
-	repository: Repository | null;
-	sender: User | null;
 }
 
 interface ForkEvent {
@@ -362,10 +379,14 @@ interface DiscordEmbed {
 	author: DiscordAuthor;
 	timestamp: string;
 }
+
+interface DiscordMentionsNone {
+	parse: [];
+}
 interface DiscordPost {
 	content?: string;
 	embeds?: DiscordEmbed[];
-	allowed_mentions?: { parse: [] };
+	allowed_mentions?: DiscordMentionsNone;
 }
 
 async function fetchToDiscord(body: string, url: string): Promise<Response> {
@@ -392,9 +413,8 @@ async function postToDiscord(
 		retries--;
 	}
 	if (!response.ok) {
-		const error = (await response.json()) as { message: string };
 		throw new Error(
-			`Discord API Error [${response.status}]: ${error.message}`,
+			`Discord API [${response.status} | ${response.statusText}]: ${JSON.stringify(await response.json())}`,
 		);
 	}
 }
@@ -402,7 +422,7 @@ async function postToDiscord(
 const page404 = "https://github.com/404.html";
 const ghostPage = "https://github.com/Ghost";
 
-const orphanRepository = "orphaned-repository";
+const orphanedRepoName = "orphaned-repository";
 
 const ghostUser: User = {
 	avatar_url: `${ghostPage}.png`,
@@ -410,9 +430,9 @@ const ghostUser: User = {
 	login: "ghost-user",
 };
 
-const nullRepository: Repository = {
-	name: orphanRepository,
-	full_name: `${ghostUser.login}/${orphanRepository}`,
+const orphanedRepository: Repository = {
+	name: orphanedRepoName,
+	full_name: `${ghostUser.login}/${orphanedRepoName}`,
 	owner: ghostUser,
 	created_at: new Date().toISOString(),
 	updated_at: new Date().toISOString(),
@@ -439,11 +459,13 @@ function buildAuthor(user: User): DiscordAuthor {
 	};
 }
 
+const allowed_mentions: DiscordMentionsNone = { parse: [] };
+
 async function handleStar(payload: unknown, env: Env): Promise<void> {
 	let { action, repository, sender, starred_at } = payload as StarEvent;
 	const ghostwriter = env.DISCORD_ROLE_ID;
 
-	if (!repository) repository = nullRepository;
+	if (!repository) repository = orphanedRepository;
 	if (!sender) sender = ghostUser;
 	if (!starred_at) starred_at = new Date().toISOString();
 	let content: string;
@@ -465,11 +487,13 @@ async function handleStar(payload: unknown, env: Env): Promise<void> {
 		value: `${repository.stargazers_count}`,
 		inline: true,
 	};
+
 	const stargazersField: DiscordField = {
 		name: "Stargazers",
 		value: `[Direct link](${repository.stargazers_url})`,
 		inline: true,
 	};
+
 	const embeds: DiscordEmbed[] = [
 		{
 			title: title,
@@ -485,15 +509,218 @@ async function handleStar(payload: unknown, env: Env): Promise<void> {
 	];
 
 	await postToDiscord({ content }, env);
-	await postToDiscord({ embeds }, env);
+	await postToDiscord({ embeds, allowed_mentions }, env);
 }
 
-async function processEvent(
+const stepFallback: Step = {
+	conclusion: "No Conclusion",
+	name: "No Step",
+};
+
+function getStepsOrFallback(steps: Step[] | null): Step[] {
+	// const relevantSteps = steps?.flatMap((step) => {
+	// 	if (step.conclusion === "cancelled" || step.conclusion === "failure")
+	// 		return step;
+	// 	else return [];
+	// });
+	if (!steps) return [stepFallback];
+	return [steps[steps?.length - 1], stepFallback];
+	// return relevantSteps ? relevantSteps : [stepFallback];
+}
+
+function toBase64Url(data: string): string {
+	const base64 = btoa(data); // Byte Char to ASCII
+	return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+function pemToDer(base64: string): ArrayBuffer {
+	const binary = atob(base64); // ASCII to Byte Char
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i); // Byte Char to 0-255
+	}
+	return bytes.buffer;
+}
+
+type InstallationToken = string;
+
+async function getInstallationToken(
+	InstallationId: number,
+	jwt: string,
+): Promise<InstallationToken> {
+	const response = await fetch(
+		`https://api.github.com/app/installations/${InstallationId}/access_tokens`,
+		{
+			method: "POST",
+			headers: {
+				"Authorization": `Bearer ${jwt}`,
+				"Accept": "application/vnd.github+json",
+				"X-GitHub-Api-Version": "2022-11-28",
+			},
+		},
+	);
+
+	const data = (await response.json()) as { token: InstallationToken };
+	return data.token;
+}
+
+const annotationFallback: Annotation = {
+	title: "[No Title]",
+	message: "[No Message]",
+	annotation_level: "failure",
+};
+
+async function getAnnotationsOrFallback(
+	installationToken: InstallationToken,
+	repositoryFullName: string,
+	workflowJobId: number,
+): Promise<Annotation[]> {
+	const response = await fetch(
+		`https://api.github.com/repos/${repositoryFullName}/check-runs/${workflowJobId}/annotations`,
+		{
+			headers: {
+				"Authorization": `Bearer ${installationToken}`,
+				"Accept": "application/vnd.github+json",
+				"X-GitHub-Api-Version": "2022-11-28",
+			},
+		},
+	);
+
+	const annotations = (await response.json()) as Annotation[];
+	const relevantAnnotations = annotations.flatMap((annotation) => {
+		if (annotation.annotation_level === "failure") return annotation;
+		else return [];
+	});
+	// const result =
+	// 	relevantAnnotations.length > 0
+	// 		? relevantAnnotations
+	// 		: [annotationFallback];
+	const result =
+		annotations.length > 0
+			? [annotations[annotations.length - 1], annotationFallback]
+			: [annotationFallback];
+
+	return result;
+}
+
+function generateHeaderAndPayload(env: Env): string {
+	const header = { alg: "RS256", typ: "JWT" };
+	const headerJson = JSON.stringify(header);
+	const payload = {
+		iat: Math.floor(Date.now() / 1000) - 60, // minus 60s
+		exp: Math.floor(Date.now() / 1000) + 600, // 10 min
+		iss: env.GITHUB_APP_ID,
+	};
+	const payloadJson = JSON.stringify(payload);
+
+	return `${toBase64Url(headerJson)}.${toBase64Url(payloadJson)}`;
+}
+
+async function generateJwt(
+	headerAndPayload: string,
+	env: Env,
+): Promise<string> {
+	const encoder = new TextEncoder();
+	const algorithm = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" };
+	const extractable = false;
+
+	const key: CryptoKey = await crypto.subtle.importKey(
+		"pkcs8", // format standard
+		pemToDer(env.GITHUB_PRIVATE_KEY), // in bytes
+		algorithm,
+		extractable,
+		["sign"], // sign, !verify
+	);
+
+	const signatureBuffer: ArrayBuffer = await crypto.subtle.sign(
+		"RSASSA-PKCS1-v1_5",
+		key,
+		encoder.encode(headerAndPayload),
+	);
+
+	const data: string = String.fromCharCode(
+		...new Uint8Array(signatureBuffer),
+	);
+	const signature: string = toBase64Url(data);
+
+	const jwt = `${headerAndPayload}.${signature}`;
+	return jwt;
+}
+
+async function handleWorkflowJob(payload: unknown, env: Env): Promise<void> {
+	let { action, repository, sender, workflow_job, installation } =
+		payload as WorkflowJobEvent;
+	if (action !== "completed") return;
+	// if (!workflowJobConclusion.includes(workflow_job.conclusion)) return;
+	const ghostwriter = env.DISCORD_ROLE_ID;
+
+	if (!repository) repository = orphanedRepository;
+	if (!sender) sender = ghostUser;
+
+	const relevantSteps: Step[] = getStepsOrFallback(workflow_job.steps);
+	const formattedSteps = relevantSteps
+		.map((step) => `**Step**: ${step.name}\n**Status**: ${step.conclusion}`)
+		.join("\n");
+
+	const content = `[actions: ${workflow_job.conclusion}] ${repository.name}
+	_ _
+	**Workflow**: ${workflow_job.workflow_name}
+	**Job**: ${workflow_job.name}
+	${formattedSteps}
+	_ _
+	Check the **workflow/job**'s page [here](${workflow_job.html_url})!
+	${ghostwriter}
+	`;
+
+	const headerAndPayload: string = generateHeaderAndPayload(env);
+	const jwt: string = await generateJwt(headerAndPayload, env);
+	const installationToken: string = await getInstallationToken(
+		installation.id,
+		jwt,
+	);
+	const annotations: Annotation[] = await getAnnotationsOrFallback(
+		installationToken,
+		repository.full_name,
+		workflow_job.id,
+	);
+
+	const embeds = annotations.map((annotation) => {
+		const title = annotation.title ? annotation.title : "[No Title]";
+		const description = annotation.message.slice(0, 4000);
+		const embed: DiscordEmbed = {
+			title: title,
+			description:
+				description.length === 4000 ? description + "..." : description,
+			color: hexToNumber(colorList.failure),
+			fields: [buildRepositoryField(repository)],
+			author: buildAuthor(sender),
+			timestamp: workflow_job.completed_at,
+		};
+		return embed;
+	});
+
+	await postToDiscord({ content }, env);
+	for (const embed of embeds) {
+		await postToDiscord({ embeds: [embed], allowed_mentions }, env);
+	}
+}
+interface BasePayload {
+	action: Action;
+	sender: User | null;
+	repository: Repository | null;
+}
+
+async function processEvents(
 	event: GitHubEvent,
-	body: string,
+	rawBody: string,
 	env: Env,
 ): Promise<void> {
-	const payload = JSON.parse(body);
+	const payload = JSON.parse(rawBody) as BasePayload;
+	const ImTheTrigger =
+		payload.sender?.login === payload.repository?.owner?.login;
+
+	// if (ImTheTrigger && event !== "workflow_job") return;
+
 	switch (event) {
 		case "issues":
 			console.log("Received event:", event);
@@ -517,13 +744,10 @@ async function processEvent(
 			console.log("Received event:", event);
 			break;
 		case "workflow_job":
-			console.log("Received event:", event);
+			handleWorkflowJob(payload, env);
 			break;
 		case "star":
 			await handleStar(payload, env);
-			break;
-		case "watch":
-			console.log("Received event:", event);
 			break;
 		case "fork":
 			console.log("Received event:", event);
@@ -543,8 +767,8 @@ export default {
 		const signature = request.headers.get("X-Hub-Signature-256");
 		if (!signature) return new Response("Unauthorized", { status: 401 });
 
-		const body: string = await request.text();
-		const valid = await verifySignature(secret, body, signature);
+		const rawBody: string = await request.text();
+		const valid = await verifySignature(secret, rawBody, signature);
 		if (!valid) return new Response("Unauthorized", { status: 401 });
 
 		const deliveryId = request.headers.get("X-GitHub-Delivery");
@@ -561,7 +785,7 @@ export default {
 		if (!isSupportedEvent(event))
 			return new Response("OK", { status: 200 });
 
-		ctx.waitUntil(processEvent(event, body, env));
+		ctx.waitUntil(processEvents(event, rawBody, env));
 
 		return new Response("OK", { status: 200 });
 	},
