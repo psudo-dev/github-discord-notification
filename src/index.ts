@@ -58,7 +58,7 @@ function hexToNumber(hex: string): number {
 const colorList: Record<ColorName, string> = {
 	issue: "#AB80FF",
 	pull_request: "#FF4AC3",
-	discussion: "#2EE6B2",
+	discussion: "#2EE6D7",
 	star: "#FFD500",
 	fork: "#50B6FF",
 	checked: "#51D936",
@@ -125,12 +125,17 @@ type State = (typeof possibleStates)[number];
 interface IssuePullRequest {
 	html_url: string;
 }
+
+const issueStates = ["open", "closed"] as const;
+
+type IssueState = (typeof issueStates)[number];
+
 interface Issue {
 	title: string;
 	body: string | null;
 	html_url: string;
 	number: number;
-	state: Selected<State, "open" | "closed">;
+	state: IssueState;
 	created_at: string;
 	updated_at: string;
 	user: User | null;
@@ -149,15 +154,18 @@ interface Repository {
 	updated_at: string;
 	html_url: string;
 	private: boolean;
+	forks_count: number;
 	stargazers_count: number;
 	stargazers_url: string;
 	subscribers_count: number;
 	subscribers_url: string;
 }
-interface IssuesEvent {
-	action: Selected<Action, "opened" | "reopened" | "deleted" | "closed">;
-	repository: Repository | null;
-	sender: User | null;
+
+const issuesActions = ["opened", "reopened", "closed"] as const;
+
+type IssuesAction = (typeof issuesActions)[number];
+interface IssuesEvent extends BaseEventPayload {
+	action: IssuesAction;
 	issue: Issue;
 }
 
@@ -172,10 +180,8 @@ interface Comment {
 	line?: number | null;
 	path?: string;
 }
-interface IssueCommentEvent {
+interface IssueCommentEvent extends BaseEventPayload {
 	action: Selected<Action, "created" | "deleted">;
-	repository: Repository | null;
-	sender: User | null;
 	issue: Issue;
 	comment: Comment;
 }
@@ -193,7 +199,7 @@ interface PullRequest {
 	state: Selected<State, "open" | "closed">;
 	user: User | null;
 }
-interface PullRequestEvent {
+interface PullRequestEvent extends BaseEventPayload {
 	action: Selected<
 		Action,
 		| "opened"
@@ -204,8 +210,6 @@ interface PullRequestEvent {
 		| "review_request_removed"
 		| "closed"
 	>;
-	repository: Repository | null;
-	sender: User | null;
 	number: number;
 	pull_request: PullRequest;
 }
@@ -221,18 +225,14 @@ interface Review {
 	updated_at: string | null;
 	user: User | null;
 }
-interface PullRequestReviewEvent {
+interface PullRequestReviewEvent extends BaseEventPayload {
 	action: Selected<Action, "submitted" | "dismissed">;
-	repository: Repository | null;
-	sender: User | null;
 	review: Review;
 	pull_request: PullRequest;
 }
 
-interface PullRequestReviewCommentEvent {
+interface PullRequestReviewCommentEvent extends BaseEventPayload {
 	action: Selected<Action, "created" | "deleted">;
-	repository: Repository | null;
-	sender: User | null;
 	comment: Comment;
 	pull_request: PullRequest;
 }
@@ -257,18 +257,14 @@ interface Discussion {
 		"open" | "closed" | "locked" | "converting" | "transferring"
 	>;
 }
-interface DiscussionEvent {
+interface DiscussionEvent extends BaseEventPayload {
 	action: Selected<Action, "created" | "deleted" | "answered" | "unanswered">;
-	repository: Repository | null;
-	sender: User | null;
 	answer?: Answer;
 	discussion: Discussion;
 }
 
-interface DiscussionCommentEvent {
+interface DiscussionCommentEvent extends BaseEventPayload {
 	action: Selected<Action, "created" | "deleted">;
-	repository: Repository | null;
-	sender: User | null;
 	comment: Comment;
 	discussion: Discussion;
 }
@@ -318,24 +314,18 @@ interface Installation {
 	node_id: string;
 }
 
-interface WorkflowJobEvent {
-	action: Selected<Action, "completed">;
-	repository: Repository | null;
-	sender: User | null;
+interface WorkflowJobEvent extends BaseEventPayload {
+	action: "completed";
 	workflow_job: WorkflowJob;
 	installation: Installation;
 }
 
-interface StarEvent {
-	action: Selected<Action, "created" | "deleted">;
-	repository: Repository | null;
-	sender: User | null;
+interface StarEvent extends BaseEventPayload {
+	action: "created" | "deleted";
 	starred_at: string | null;
 }
 
-interface ForkEvent {
-	repository: Repository | null;
-	sender: User | null;
+interface ForkEvent extends BaseEventPayload {
 	forkee: Repository | null;
 }
 
@@ -391,7 +381,7 @@ async function postToDiscord(
 		response = await fetchToDiscord(body, url);
 		retries--;
 	}
-	await handleError(response);
+	await handleResponseError(response);
 }
 
 const page404 = "https://github.com/404.html";
@@ -413,6 +403,7 @@ const orphanedRepository: Repository = {
 	updated_at: new Date().toISOString(),
 	html_url: page404,
 	private: false,
+	forks_count: 0,
 	stargazers_count: 0,
 	stargazers_url: page404,
 	subscribers_count: 0,
@@ -426,22 +417,24 @@ function buildRepositoryField(repository: Repository): DiscordField {
 	};
 }
 
-function buildAuthor(user: User): DiscordAuthor {
+function buildAuthor(user: User | null): DiscordAuthor {
+	let safeUser: User;
+	if (!user) safeUser = ghostUser;
+	else safeUser = user;
 	return {
-		name: user.login,
-		url: user.html_url,
-		icon_url: user.avatar_url,
+		name: safeUser.login,
+		url: safeUser.html_url,
+		icon_url: safeUser.avatar_url,
 	};
 }
 
 const allowed_mentions: DiscordMentionsNone = { parse: [] };
 
-async function handleStar(payload: unknown, env: Env): Promise<void> {
-	let { action, repository, sender, starred_at } = payload as StarEvent;
+async function handleStar(payload: BaseEventPayload, env: Env): Promise<void> {
+	const { repository, sender } = basePayloadFallback(payload);
+	let { action, starred_at } = payload as StarEvent;
 	const ghostwriter = env.DISCORD_ROLE_ID;
 
-	if (!repository) repository = orphanedRepository;
-	if (!sender) sender = ghostUser;
 	if (!starred_at) starred_at = new Date().toISOString();
 	let content: string;
 	let title: string;
@@ -473,11 +466,7 @@ async function handleStar(payload: unknown, env: Env): Promise<void> {
 		{
 			title: title,
 			color: color,
-			fields: [
-				buildRepositoryField(repository),
-				starsField,
-				stargazersField,
-			],
+			fields: [buildRepositoryField(repository), starsField, stargazersField],
 			author: buildAuthor(sender),
 			timestamp: starred_at,
 		},
@@ -493,14 +482,12 @@ const stepFallback: Step = {
 };
 
 function getStepsOrFallback(steps: Step[] | null): Step[] {
-	// const relevantSteps = steps?.flatMap((step) => {
-	// 	if (step.conclusion === "cancelled" || step.conclusion === "failure")
-	// 		return step;
-	// 	else return [];
-	// });
-	if (!steps || steps.length === 0) return [stepFallback];
-	return [steps[steps.length - 1], stepFallback];
-	// return relevantSteps ? relevantSteps : [stepFallback];
+	const relevantSteps = steps?.flatMap((step) => {
+		if (step.conclusion === "cancelled" || step.conclusion === "failure")
+			return step;
+		else return [];
+	});
+	return relevantSteps ? relevantSteps : [stepFallback];
 }
 
 function toBase64Url(data: string): string {
@@ -520,37 +507,39 @@ function pemToDer(base64: string): ArrayBuffer {
 type InstallationToken = string;
 
 async function getInstallationToken(
-	InstallationId: number,
+	installationId: number,
 	jwt: string,
 ): Promise<InstallationToken> {
 	const response = await fetch(
-		`https://api.github.com/app/installations/${InstallationId}/access_tokens`,
+		`https://api.github.com/app/installations/${installationId}/access_tokens`,
 		{
 			method: "POST",
 			headers: {
 				"Authorization": `Bearer ${jwt}`,
 				"Accept": "application/vnd.github+json",
 				"X-GitHub-Api-Version": "2022-11-28",
+				"User-Agent": "github-discord-notification/1.0.0",
 			},
 		},
 	);
 
-	await handleError(response);
+	await handleResponseError(response);
 
 	const data = (await response.json()) as { token: InstallationToken };
 	return data.token;
 }
 
-async function handleError(response: Response): Promise<void> {
+async function handleResponseError(response: Response): Promise<void> {
 	if (!response.ok) {
+		const text = await response.text();
 		let body: string;
 		try {
-			body = JSON.stringify(await response.json());
+			body = JSON.stringify(JSON.parse(text));
 		} catch {
-			body = await response.text();
+			body = text;
 		}
 		throw new Error(
-			`Discord API [${response.status} | ${response.statusText}]: ${body}`,
+			`GitHub API [${response.status} | ${response.statusText}]: ${body}`,
 		);
 	}
 }
@@ -573,25 +562,20 @@ async function getAnnotationsOrFallback(
 				"Authorization": `Bearer ${installationToken}`,
 				"Accept": "application/vnd.github+json",
 				"X-GitHub-Api-Version": "2022-11-28",
+				"User-Agent": "github-discord-notification/1.0.0",
 			},
 		},
 	);
 
-	await handleError(response);
+	await handleResponseError(response);
 
 	const annotations = (await response.json()) as Annotation[];
-	// const relevantAnnotations = annotations.flatMap((annotation) => {
-	// 	if (annotation.annotation_level === "failure") return annotation;
-	// 	else return [];
-	// });
-	// const result =
-	// 	relevantAnnotations.length > 0
-	// 		? relevantAnnotations
-	// 		: [annotationFallback];
+	const relevantAnnotations = annotations.flatMap((annotation) => {
+		if (annotation.annotation_level === "failure") return annotation;
+		else return [];
+	});
 	const result =
-		annotations.length > 0
-			? [annotations[annotations.length - 1], annotationFallback]
-			: [annotationFallback];
+		relevantAnnotations.length > 0 ? relevantAnnotations : [annotationFallback];
 
 	return result;
 }
@@ -631,38 +615,43 @@ async function generateJwt(
 		encoder.encode(headerAndPayload),
 	);
 
-	const data: string = String.fromCharCode(
-		...new Uint8Array(signatureBuffer),
-	);
+	const data: string = String.fromCharCode(...new Uint8Array(signatureBuffer));
 	const signature: string = toBase64Url(data);
 
 	const jwt = `${headerAndPayload}.${signature}`;
 	return jwt;
 }
 
-async function handleWorkflowJob(payload: unknown, env: Env): Promise<void> {
-	let { action, repository, sender, workflow_job, installation } =
-		payload as WorkflowJobEvent;
-	if (action !== "completed") return;
-	// if (!workflowJobConclusion.includes(workflow_job.conclusion)) return;
-	const ghostwriter = env.DISCORD_ROLE_ID;
+async function handleWorkflowJob(
+	payload: BaseEventPayload,
+	env: Env,
+): Promise<void> {
+	const { repository, sender } = basePayloadFallback(payload);
+	const { action, workflow_job, installation } = payload as WorkflowJobEvent;
 
-	if (!repository) repository = orphanedRepository;
-	if (!sender) sender = ghostUser;
+	if (action !== "completed") return;
+	if (!workflowJobConclusion.includes(workflow_job.conclusion)) return;
+	const ghostwriter = env.DISCORD_ROLE_ID;
 
 	const relevantSteps: Step[] = getStepsOrFallback(workflow_job.steps);
 	const formattedSteps = relevantSteps
-		.map((step) => `**Step**: ${step.name}\n**Status**: ${step.conclusion}`)
+		.map(
+			(step) =>
+				`**Step**: ${step.name}\n**Status**: ${capitalizeText(step.conclusion)}`,
+		)
 		.join("\n");
 
-	const content = `[actions: ${workflow_job.conclusion}] ${repository.name}
+	const contentDraft = `
+	**[actions: ${workflow_job.conclusion}] ${repository.full_name}**
 	_ _
 	**Workflow**: ${workflow_job.workflow_name}
 	**Job**: ${workflow_job.name}
 	${formattedSteps}
 	_ _
-	Check the **workflow/job**'s page [here](${workflow_job.html_url})!
-	${ghostwriter}`;
+	Check the **workflow/job**'s page ${noLinkPreview("here", workflow_job.html_url)}!
+	${ghostwriter}
+	`;
+	const content = formatText(contentDraft);
 
 	const headerAndPayload: string = generateHeaderAndPayload(env);
 	const jwt: string = await generateJwt(headerAndPayload, env);
@@ -677,12 +666,11 @@ async function handleWorkflowJob(payload: unknown, env: Env): Promise<void> {
 	);
 
 	const embeds = annotations.map((annotation) => {
-		const title = annotation.title ? annotation.title : "[No Title]";
-		const description = annotation.message.slice(0, 4000);
+		const title = annotation.title ? annotation.title : "";
+		const description = truncateText(annotation.message, 4000);
 		const embed: DiscordEmbed = {
 			title: title,
-			description:
-				description.length === 4000 ? description + "..." : description,
+			description: description,
 			color: hexToNumber(colorList.failure),
 			fields: [buildRepositoryField(repository)],
 			author: buildAuthor(sender),
@@ -696,8 +684,148 @@ async function handleWorkflowJob(payload: unknown, env: Env): Promise<void> {
 		await postToDiscord({ embeds: [embed], allowed_mentions }, env);
 	}
 }
-interface BasePayload {
-	action: Action;
+
+function noLinkPreview(text: string, url: string): string {
+	return `[${text}](<${url}>)`;
+}
+
+function formatText(str: string): string {
+	return str.replace(/^[ \t]+/gm, "");
+}
+
+function truncateText(str: string, limit: number): string {
+	const formatted = str.slice(0, limit);
+	if (str.length > limit) return `${formatted}...`;
+	else return formatted;
+}
+
+function capitalize(word: string): string {
+	return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function capitalizeText(str: string | null): string {
+	if (str === null) return "Null";
+	const underscore = "_";
+	let capitalized: string;
+	if (str.includes(underscore)) {
+		capitalized = str
+			.split(underscore)
+			.map((word) => capitalize(word))
+			.join(" ");
+		return capitalized;
+	} else {
+		capitalized = capitalize(str);
+	}
+	return capitalized;
+}
+
+function basePayloadFallback(payload: BaseEventPayload): {
+	repository: Repository;
+	sender: User;
+} {
+	let { repository, sender } = payload;
+
+	if (!repository) repository = orphanedRepository;
+	if (!sender) sender = ghostUser;
+
+	return { repository, sender };
+}
+
+async function handleFork(payload: BaseEventPayload, env: Env): Promise<void> {
+	const { repository, sender } = basePayloadFallback(payload);
+	let { forkee } = payload as ForkEvent;
+	if (!forkee) forkee = orphanedRepository;
+	const ghostwriter = env.DISCORD_ROLE_ID;
+
+	const content = `**${sender.login}** forked **${repository.full_name}**!\n${ghostwriter}`;
+
+	const title = `forked ${repository.name}`;
+	const draftDescription = `
+	**URL**: ${noLinkPreview(forkee.full_name, forkee.html_url)}
+	**Visibility**: ${repository.private ? "Private" : "Public"}
+	`;
+	const description = formatText(draftDescription);
+	const color = hexToNumber(colorList.fork);
+	const fields: DiscordField[] = [
+		{
+			name: "Forked Repository",
+			value: `[${repository.name}](<${repository.html_url}>)`,
+		},
+		{
+			name: "Forks Count",
+			value: `${repository.forks_count}`,
+		},
+	];
+	const embeds: DiscordEmbed[] = [
+		{
+			title,
+			description,
+			color,
+			fields,
+			author: buildAuthor(sender),
+			timestamp: forkee.created_at,
+		},
+	];
+
+	await postToDiscord({ content }, env);
+	await postToDiscord({ embeds, allowed_mentions }, env);
+}
+
+function buildIssueEmbed(
+	issue: Issue,
+	repository: Repository,
+	action: IssuesEvent["action"],
+): DiscordEmbed {
+	const title = `(#${issue.number}) ${issue.title}`;
+	const description = issue.body ? issue.body : "[No Message]";
+	let color: number;
+	if (action === "opened" || action === "reopened")
+		color = hexToNumber(colorList.issue);
+	else color = hexToNumber(colorList.dismissed);
+	const issueField: DiscordField = {
+		name: "Issue",
+		value: `#${issue.number}`,
+		inline: true,
+	};
+	const stateField: DiscordField = {
+		name: "State",
+		value: `${capitalizeText(issue.state)}`,
+		inline: true,
+	};
+
+	return {
+		title: truncateText(title, 250),
+		description: truncateText(description, 4000),
+		color: color,
+		fields: [buildRepositoryField(repository), issueField, stateField],
+		author: buildAuthor(issue.user),
+		timestamp: issue.created_at,
+	};
+}
+
+async function handleIssues(
+	payload: BaseEventPayload,
+	env: Env,
+): Promise<void> {
+	const { repository, sender } = basePayloadFallback(payload);
+	const { action, issue } = payload as IssuesEvent;
+	if (!issuesActions.includes(action)) return;
+	const ghostwriter = env.DISCORD_ROLE_ID;
+
+	const draftContent = `
+	**[issue #${issue.number}] ${repository.full_name}**
+	_ _
+	The issue **${noLinkPreview(issue.title, issue.html_url)}** has been **${action}** by **${noLinkPreview(sender.login, sender.html_url)}**.
+	${ghostwriter}
+	`;
+	const content = formatText(draftContent);
+	const embeds: DiscordEmbed[] = [buildIssueEmbed(issue, repository, action)];
+
+	await postToDiscord({ content }, env);
+	await postToDiscord({ embeds, allowed_mentions }, env);
+}
+
+interface BaseEventPayload {
 	sender: User | null;
 	repository: Repository | null;
 }
@@ -707,7 +835,7 @@ async function processEvents(
 	rawBody: string,
 	env: Env,
 ): Promise<void> {
-	const payload = JSON.parse(rawBody) as BasePayload;
+	const payload = JSON.parse(rawBody) as BaseEventPayload;
 	const ImTheTrigger =
 		payload.sender?.login === payload.repository?.owner?.login;
 
@@ -715,7 +843,7 @@ async function processEvents(
 
 	switch (event) {
 		case "issues":
-			console.log("Received event:", event);
+			await handleIssues(payload, env);
 			break;
 		case "issue_comment":
 			console.log("Received event:", event);
@@ -742,7 +870,7 @@ async function processEvents(
 			await handleStar(payload, env);
 			break;
 		case "fork":
-			console.log("Received event:", event);
+			await handleFork(payload, env);
 			break;
 	}
 }
@@ -774,8 +902,7 @@ export default {
 		const event = request.headers.get("X-GitHub-Event");
 		if (!event) return new Response("Bad Request", { status: 400 });
 
-		if (!isSupportedEvent(event))
-			return new Response("OK", { status: 200 });
+		if (!isSupportedEvent(event)) return new Response("OK", { status: 200 });
 
 		ctx.waitUntil(processEvents(event, rawBody, env));
 
