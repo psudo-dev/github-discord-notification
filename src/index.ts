@@ -180,8 +180,13 @@ interface Comment {
 	line?: number | null;
 	path?: string;
 }
+
+const issueCommentActions = ["created", "deleted"] as const;
+
+type IssueCommentAction = (typeof issueCommentActions)[number];
+
 interface IssueCommentEvent extends BaseEventPayload {
-	action: Selected<Action, "created" | "deleted">;
+	action: IssueCommentAction;
 	issue: Issue;
 	comment: Comment;
 }
@@ -774,16 +779,13 @@ async function handleFork(payload: BaseEventPayload, env: Env): Promise<void> {
 function buildIssueEmbed(
 	issue: Issue,
 	repository: Repository,
-	action: IssuesEvent["action"],
+	color: number,
 ): DiscordEmbed {
 	const title = `(#${issue.number}) ${issue.title}`;
 	const description = issue.body ? issue.body : "[No Message]";
-	let color: number;
-	if (action === "opened" || action === "reopened")
-		color = hexToNumber(colorList.issue);
-	else color = hexToNumber(colorList.dismissed);
+	const name = issue.pull_request ? "Pull-Request" : "Issue";
 	const issueField: DiscordField = {
-		name: "Issue",
+		name: name,
 		value: `#${issue.number}`,
 		inline: true,
 	};
@@ -819,10 +821,73 @@ async function handleIssues(
 	${ghostwriter}
 	`;
 	const content = formatText(draftContent);
-	const embeds: DiscordEmbed[] = [buildIssueEmbed(issue, repository, action)];
+	let color: number;
+	if (action === "opened" || action === "reopened")
+		color = hexToNumber(colorList.issue);
+	else color = hexToNumber(colorList.dismissed);
+	const embeds: DiscordEmbed[] = [buildIssueEmbed(issue, repository, color)];
 
 	await postToDiscord({ content }, env);
 	await postToDiscord({ embeds, allowed_mentions }, env);
+}
+
+function buildCommentEmbed(comment: Comment, color: number): DiscordEmbed {
+	let user = comment.user;
+	if (!user) user = ghostUser;
+	const description = truncateText(comment.body, 4000);
+	return {
+		title: `${user.login} commented:`,
+		description,
+		color,
+		author: buildAuthor(user),
+		timestamp: comment.updated_at,
+	};
+}
+
+async function handleIssueComment(
+	payload: BaseEventPayload,
+	env: Env,
+): Promise<void> {
+	const { repository, sender } = basePayloadFallback(payload);
+	const { action, issue, comment } = payload as IssueCommentEvent;
+	if (!issueCommentActions.includes(action)) return;
+	const ghostwriter = env.DISCORD_ROLE_ID;
+	let content: string;
+	let color: number;
+	if (!issue.pull_request) {
+		const draftContent = `
+		**[issue #${issue.number}] ${repository.full_name}**
+		_ _
+		**${noLinkPreview(sender.login, sender.html_url)}** commented on ${noLinkPreview(issue.title, comment.html_url)}.
+		${ghostwriter}
+		`;
+		content = formatText(draftContent);
+		color = hexToNumber(colorList.issue);
+	} else {
+		const draftContent = `
+		**[PR #${issue.number}] ${repository.full_name}**
+		_ _
+		**${noLinkPreview(issue.title, comment.html_url)}**
+		_ _
+		**${noLinkPreview(sender.login, sender.html_url)}**:_ _commented on the pull request thread.
+		${ghostwriter}
+		`;
+		content = formatText(draftContent);
+		color = hexToNumber(colorList.pull_request);
+	}
+	if (action === "deleted") color = hexToNumber(colorList.dismissed);
+	const commentPost: DiscordPost = {
+		embeds: [buildCommentEmbed(comment, color)],
+		allowed_mentions,
+	};
+	const issuePost: DiscordPost = {
+		embeds: [buildIssueEmbed(issue, repository, color)],
+		allowed_mentions,
+	};
+
+	await postToDiscord({ content }, env);
+	await postToDiscord(commentPost, env);
+	await postToDiscord(issuePost, env);
 }
 
 interface BaseEventPayload {
@@ -846,7 +911,7 @@ async function processEvents(
 			await handleIssues(payload, env);
 			break;
 		case "issue_comment":
-			console.log("Received event:", event);
+			await handleIssueComment(payload, env);
 			break;
 		case "pull_request":
 			console.log("Received event:", event);
