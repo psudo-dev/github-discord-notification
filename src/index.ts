@@ -68,7 +68,6 @@ const colorList: Record<ColorName, string> = {
 const githubSupportedEvents = [
 	"issues",
 	"issue_comment",
-	"sub_issues",
 	"pull_request",
 	"pull_request_review",
 	"pull_request_review_comment",
@@ -146,6 +145,8 @@ interface Comment {
 	subject_type?: "line" | "file";
 	line?: number | null;
 	original_line?: number | null;
+	start_line?: number | null;
+	original_start_line?: number | null;
 	path?: string;
 }
 
@@ -1007,7 +1008,7 @@ function prActionText(action: PullRequestAction): string {
 		case "review_requested":
 			return "requested a review";
 		case "ready_for_review":
-			return "the pull request is ready for review";
+			return "marked the pull request as `ready for review`";
 		case "review_request_removed":
 			return "removed a review request";
 	}
@@ -1100,7 +1101,7 @@ function buildPrContent(
 		_ _
 		**Title**: **${noLinkPreview(subject.title, url, true)}**
 		_ _
-		**${noLinkPreview(sender.login, sender.html_url)}**: ${status}.
+		**${noLinkPreview(sender.login, sender.html_url)}** ${status}.
 		${ghostwriter}
 		`;
 	return formatText(content);
@@ -1116,7 +1117,7 @@ async function handlePullRequestReview(
 
 	const ghostwriter = env.DISCORD_ROLE_ID;
 
-	const status = `${action} a pull request review`;
+	const status = `submitted a pull request review`;
 	const content = buildPrContent(
 		pull_request,
 		payload,
@@ -1134,12 +1135,12 @@ async function handlePullRequestReview(
 		author: buildAuthor(review.user),
 		timestamp: review.submitted_at,
 	};
-	const discordPost: DiscordPost = {
-		embeds: [reviewPost, buildPrEmbed(pull_request, repository, color)],
-		allowed_mentions,
-	};
 
-	await postToDiscord(discordPost, env);
+	const embeds: DiscordEmbed[] = [
+		reviewPost,
+		buildPrEmbed(pull_request, repository, color),
+	];
+	await postToDiscord({ embeds, allowed_mentions }, env);
 }
 
 function buildDiffEmbed(
@@ -1164,6 +1165,7 @@ function buildPrReviewCommentEmbed(
 	color: number,
 ): DiscordEmbed {
 	const file = comment.path ? `${comment.path.split("/").pop()}` : "[no file]";
+
 	const fileField: DiscordField = {
 		name: "File",
 		value: file,
@@ -1171,10 +1173,15 @@ function buildPrReviewCommentEmbed(
 	};
 
 	let line: string;
+	const commentLine = comment.line ?? comment.original_line;
+	const commentStartLine = comment.start_line ?? comment.original_start_line;
+
 	if (comment.subject_type === "file") line = "File Level";
-	else line = `${comment.line ?? comment.original_line}`;
+	else if (commentStartLine) line = `${commentStartLine}-${commentLine}`;
+	else line = `${commentLine}`;
+
 	const lineField: DiscordField = {
-		name: "Line",
+		name: "Line Range",
 		value: line,
 		inline: true,
 	};
@@ -1222,6 +1229,7 @@ async function handlePullRequestReviewComment(
 		ghostwriter,
 	);
 	await postToDiscord({ content }, env);
+
 	const embeds: DiscordEmbed[] = [
 		buildPrEmbed(pull_request, repository, color),
 		buildPrReviewCommentEmbed(comment, createdOrDeleted, commentColor),
@@ -1242,8 +1250,8 @@ async function handlePullRequestReviewThread(
 	const ghostwriter = env.DISCORD_ROLE_ID;
 
 	const prChangesUrl = `${pull_request.html_url}/changes`;
-
 	const status = `marked a pull request review thread as ${action}.\nThis thread has **${comments.length} ${comments.length === 1 ? "comment" : "comments"}**`;
+
 	const content = buildPrContent(
 		pull_request,
 		payload,
@@ -1253,22 +1261,29 @@ async function handlePullRequestReviewThread(
 	);
 	await postToDiscord({ content }, env);
 
-	const reviewComment = comments[0];
-	const reviewTitle = "review comment:";
-
-	const lastComment = comments[comments.length - 1];
-	const lastCommentTitle = "last comment:";
-
 	const threadColor =
 		action === "resolved"
 			? hexToNumber(colorList.resolved)
 			: hexToNumber(colorList.dismissed);
 	const color = hexToNumber(colorList.pull_request);
 
+	const reviewComment = comments[0];
+	const reviewTitle = "review comment";
+
+	let lastCommentEmbed: DiscordEmbed[] = [];
+	if (comments.length > 1) {
+		const lastComment = comments[comments.length - 1];
+		const lastCommentTitle = "last comment";
+
+		lastCommentEmbed = [
+			buildPrReviewCommentEmbed(lastComment, lastCommentTitle, threadColor),
+		];
+	}
+
 	const embeds: DiscordEmbed[] = [
 		buildPrEmbed(pull_request, repository, color),
 		buildPrReviewCommentEmbed(reviewComment, reviewTitle, threadColor),
-		buildPrReviewCommentEmbed(lastComment, lastCommentTitle, threadColor),
+		...lastCommentEmbed,
 		...buildDiffEmbed(reviewComment.diff_hunk, updated_at),
 	];
 	await postToDiscord({ embeds, allowed_mentions }, env);
@@ -1284,23 +1299,11 @@ async function processEvents(
 	rawBody: string,
 	env: Env,
 ): Promise<void> {
-	const payload = JSON.parse(rawBody) as any;
+	const payload = JSON.parse(rawBody) as BaseEventPayload;
 	const ImTheTrigger =
 		payload.sender?.login === payload.repository?.owner?.login;
 
-	// if (ImTheTrigger && event !== "workflow_job") return;
-	console.log(`${event}: ${payload.action}`);
-	if (payload.action === "resolved" || payload.action === "unresolved")
-		payload.thread.comments.forEach((comment: Comment) => {
-			console.log(`Comment: ${comment.body}`);
-		});
-	if (payload.action.includes("added") || payload.action.includes("removed"))
-		console.log(
-			`Parent Issue Title: ${payload.parent_issue.title}\nSub Issue Title: ${payload.sub_issue.title}`,
-		);
-	if (event === "pull_request_review_comment") {
-		console.log("pull_request._links:\n");
-	}
+	if (ImTheTrigger && event !== "workflow_job") return;
 
 	switch (event) {
 		case "issues":
@@ -1319,7 +1322,7 @@ async function processEvents(
 			await handlePullRequestReviewComment(payload, env);
 			break;
 		case "pull_request_review_thread":
-			await handlePullRequestReviewComment(payload, env);
+			await handlePullRequestReviewThread(payload, env);
 			break;
 		case "discussion":
 			await handleDiscussion(payload, env);
