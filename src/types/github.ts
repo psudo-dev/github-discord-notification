@@ -33,11 +33,7 @@ export interface GitHubInstallation {
 
 export type OpenClosedState = "open" | "closed";
 
-export type ReviewState =
-	| "approved"
-	| "changes_requested"
-	| "commented"
-	| "dismissed";
+export type ReviewState = "approved" | "changes_requested" | "commented";
 
 export type DiscussionState =
 	| "open"
@@ -61,6 +57,10 @@ export interface GitHubAnnotation {
 	annotation_level: "notice" | "warning" | "failure";
 }
 
+export const commentActions = ["created", "deleted"] as const;
+
+export type CommentAction = (typeof commentActions)[number];
+
 export interface GitHubComment {
 	body: string;
 	html_url: string;
@@ -76,9 +76,13 @@ export interface GitHubComment {
 	path?: string;
 }
 
-export const commentActions = ["created", "deleted"] as const;
+export interface IssuePullRequest {
+	html_url: string;
+}
 
-export type CommentAction = (typeof commentActions)[number];
+export const issuesActions = ["opened", "reopened", "closed"] as const;
+
+export type IssuesAction = (typeof issuesActions)[number];
 
 export interface GitHubIssue {
 	title: string;
@@ -92,13 +96,17 @@ export interface GitHubIssue {
 	pull_request?: IssuePullRequest;
 }
 
-export interface IssuePullRequest {
-	html_url: string;
-}
+export const pullRequestActions = [
+	"opened",
+	"ready_for_review",
+	"reopened",
+	"synchronize",
+	"review_requested",
+	"review_request_removed",
+	"closed",
+] as const;
 
-export const issuesActions = ["opened", "reopened", "closed"] as const;
-
-export type IssuesAction = (typeof issuesActions)[number];
+export type PullRequestAction = (typeof pullRequestActions)[number];
 
 export interface GitHubPullRequest {
 	title: string;
@@ -114,17 +122,14 @@ export interface GitHubPullRequest {
 	user: GitHubUser | null;
 }
 
-export const pullRequestActions = [
-	"opened",
-	"ready_for_review",
-	"reopened",
-	"synchronize",
-	"review_requested",
-	"review_request_removed",
+export const discussionActions = [
+	"created",
+	"answered",
+	"unanswered",
 	"closed",
 ] as const;
 
-export type PullRequestAction = (typeof pullRequestActions)[number];
+export type DiscussionAction = (typeof discussionActions)[number];
 
 export interface GitHubDiscussion {
 	title: string;
@@ -136,25 +141,6 @@ export interface GitHubDiscussion {
 	number: number;
 	state: DiscussionState;
 	user: GitHubUser | null;
-}
-
-export const discussionActions = [
-	"created",
-	"answered",
-	"unanswered",
-	"closed",
-] as const;
-
-export type DiscussionAction = (typeof discussionActions)[number];
-
-export interface GitHubWorkflowJob {
-	completed_at: string;
-	conclusion: WorkflowJobConclusion;
-	check_run_url: string;
-	html_url: string;
-	name: string;
-	workflow_name: string;
-	steps: Step[] | null;
 }
 
 export type StepConclusion =
@@ -177,3 +163,13 @@ export const workflowJobConclusion = [
 ] as const;
 
 export type WorkflowJobConclusion = (typeof workflowJobConclusion)[number];
+
+export interface GitHubWorkflowJob {
+	completed_at: string;
+	conclusion: WorkflowJobConclusion;
+	check_run_url: string;
+	html_url: string;
+	name: string;
+	workflow_name: string;
+	steps: Step[] | null;
+}

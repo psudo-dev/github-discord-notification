@@ -1,6 +1,6 @@
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { GitHubIssue, GitHubRepository } from "../types/github";
-import { capitalizeText, truncateText } from "../utils";
+import { capitalizeText, truncateText } from "../utils/utils";
 import { buildAuthor, buildRepositoryField } from "./utils";
 
 export function buildIssueEmbed(

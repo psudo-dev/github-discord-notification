@@ -1,9 +1,9 @@
 import { buildAuthor, buildRepositoryField } from "../builders/utils";
-import { allowed_mentions, colorList } from "../constants";
-import { postToDiscord } from "../discord";
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { BaseEventPayload, StarEvent } from "../types/github-events";
-import { basePayloadOrFallback, hexToNumber } from "../utils";
+import { allowed_mentions, colorList } from "../utils/constants";
+import { postToDiscord } from "../utils/discord";
+import { basePayloadOrFallback, hexToNumber } from "../utils/utils";
 
 export async function handleStar(
 	payload: BaseEventPayload,
@@ -37,7 +37,7 @@ export async function handleStar(
 
 	const stargazersField: DiscordField = {
 		name: "Stargazers",
-		value: `[Direct link](${repository.stargazers_url})`,
+		value: `[Direct link](${repository.html_url}/stargazers)`,
 		inline: true,
 	};
 

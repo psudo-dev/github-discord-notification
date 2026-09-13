@@ -1,8 +1,6 @@
 import { buildCommentEmbed } from "../builders/comment";
 import { buildIssueEmbed } from "../builders/issues";
 import { buildPrContent } from "../builders/pull-request";
-import { allowed_mentions, colorList } from "../constants";
-import { postToDiscord } from "../discord";
 import type { DiscordEmbed } from "../types/discord";
 import { commentActions, issuesActions } from "../types/github";
 import type {
@@ -10,12 +8,14 @@ import type {
 	IssueCommentEvent,
 	IssuesEvent,
 } from "../types/github-events";
+import { allowed_mentions, colorList } from "../utils/constants";
+import { postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	formatText,
 	hexToNumber,
 	noLinkPreview,
-} from "../utils";
+} from "../utils/utils";
 
 export async function handleIssues(
 	payload: BaseEventPayload,

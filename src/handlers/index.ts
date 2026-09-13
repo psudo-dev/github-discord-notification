@@ -1,19 +1,16 @@
-import {
-	handleDiscussion,
-	handleDiscussionComment,
-} from "./handlers/discussion";
-import { handleFork } from "./handlers/fork";
-import { handleIssueComment, handleIssues } from "./handlers/issues";
+import type { BaseEventPayload } from "../types/github-events";
+import type { GitHubEvent } from "../types/types";
+import { handleDiscussion, handleDiscussionComment } from "./discussion";
+import { handleFork } from "./fork";
+import { handleIssueComment, handleIssues } from "./issues";
 import {
 	handlePullRequest,
 	handlePullRequestReview,
 	handlePullRequestReviewComment,
 	handlePullRequestReviewThread,
-} from "./handlers/pull-request";
-import { handleStar } from "./handlers/star";
-import { handleWorkflowJob } from "./handlers/workflow-job";
-import type { BaseEventPayload } from "./types/github-events";
-import type { GitHubEvent } from "./types/types";
+} from "./pull-request";
+import { handleStar } from "./star";
+import { handleWorkflowJob } from "./workflow-job";
 
 export async function processEvents(
 	event: GitHubEvent,

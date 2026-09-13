@@ -1,5 +1,5 @@
-import { handleResponseError } from "./handlers/response-error";
-import type { DiscordPost } from "./types/discord";
+import { handleResponseError } from "../handlers/response-error";
+import type { DiscordPost } from "../types/discord";
 
 export async function fetchToDiscord(
 	body: string,

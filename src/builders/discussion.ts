@@ -1,7 +1,7 @@
-import { colorList } from "../constants";
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { GitHubDiscussion, GitHubRepository } from "../types/github";
-import { hexToNumber, truncateText } from "../utils";
+import { colorList } from "../utils/constants";
+import { hexToNumber, truncateText } from "../utils/utils";
 import { buildAuthor, buildRepositoryField } from "./utils";
 
 export function buildDiscussionEmbed(

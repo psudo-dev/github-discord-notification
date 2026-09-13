@@ -1,14 +1,18 @@
 import { buildAuthor } from "../builders/utils";
-import { allowed_mentions, colorList, orphanedRepository } from "../constants";
-import { postToDiscord } from "../discord";
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { BaseEventPayload, ForkEvent } from "../types/github-events";
+import {
+	allowed_mentions,
+	colorList,
+	orphanedRepository,
+} from "../utils/constants";
+import { postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	formatText,
 	hexToNumber,
 	noLinkPreview,
-} from "../utils";
+} from "../utils/utils";
 
 export async function handleFork(
 	payload: BaseEventPayload,

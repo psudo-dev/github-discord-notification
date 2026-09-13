@@ -1,6 +1,6 @@
-import type { DiscordMentionsNone } from "./types/discord";
-import type { GitHubRepository, GitHubUser } from "./types/github";
-import type { ColorName } from "./types/types";
+import type { DiscordMentionsNone } from "../types/discord";
+import type { GitHubRepository, GitHubUser } from "../types/github";
+import type { ColorName } from "../types/types";
 
 export const colorList: Record<ColorName, string> = {
 	issue: "#AB80FF",
@@ -14,10 +14,10 @@ export const colorList: Record<ColorName, string> = {
 	dismissed: "#A6ADB6",
 };
 
-export const page404 = "https://github.com/404.html";
-export const ghostPage = "https://github.com/ghost";
+const page404 = "https://github.com/404.html";
+const ghostPage = "https://github.com/ghost";
 
-export const orphanedRepoName = "orphaned-repository";
+const orphanedRepoName = "orphaned-repository";
 
 export const ghostUser: GitHubUser = {
 	avatar_url: `${ghostPage}.png`,

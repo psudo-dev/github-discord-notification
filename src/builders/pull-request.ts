@@ -12,7 +12,7 @@ import {
 	formatText,
 	noLinkPreview,
 	truncateText,
-} from "../utils";
+} from "../utils/utils";
 import { buildAuthor, buildRepositoryField } from "./utils";
 
 export function buildPrContent(

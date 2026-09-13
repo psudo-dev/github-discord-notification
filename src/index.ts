@@ -1,6 +1,6 @@
 import { verifySignature } from "./auth/verify-signature";
-import { processEvents } from "./process-events";
-import { isSupportedEvent } from "./utils";
+import { processEvents } from "./handlers";
+import { isSupportedEvent } from "./utils/utils";
 
 export default {
 	async fetch(

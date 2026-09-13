@@ -1,11 +1,11 @@
-import { colorList, ghostUser } from "../constants";
 import type {
 	DiscordAuthor,
 	DiscordEmbed,
 	DiscordField,
 } from "../types/discord";
 import type { GitHubRepository, GitHubUser } from "../types/github";
-import { hexToNumber, truncateText } from "../utils";
+import { colorList, ghostUser } from "../utils/constants";
+import { hexToNumber, truncateText } from "../utils/utils";
 
 export function buildRepositoryField(
 	repository: GitHubRepository,

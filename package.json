@@ -9,7 +9,7 @@
 		"remote": "bun run types && wrangler dev --remote",
 		"deploy": "bun run types && wrangler deploy",
 		"tail": "bun run update && wrangler tail",
-		"bundle": "bun run deploy --dry-run --outdir ."
+		"bundle": "bun run deploy --dry-run --outdir dist"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.13",

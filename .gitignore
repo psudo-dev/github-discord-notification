@@ -39,3 +39,6 @@ worker-configuration.d.ts
 
 # Wrangler Data
 .wrangler/
+
+# dist
+dist

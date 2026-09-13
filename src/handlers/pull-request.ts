@@ -4,10 +4,12 @@ import {
 	buildPrReviewCommentEmbed,
 } from "../builders/pull-request";
 import { buildAuthor, buildDiffEmbed } from "../builders/utils";
-import { allowed_mentions, colorList } from "../constants";
-import { postToDiscord } from "../discord";
 import type { DiscordEmbed } from "../types/discord";
-import { commentActions, pullRequestActions } from "../types/github";
+import {
+	commentActions,
+	type PullRequestAction,
+	pullRequestActions,
+} from "../types/github";
 import type {
 	BaseEventPayload,
 	PullRequestEvent,
@@ -15,13 +17,33 @@ import type {
 	PullRequestReviewEvent,
 	PullRequestReviewThreadEvent,
 } from "../types/github-events";
+import { allowed_mentions, colorList } from "../utils/constants";
+import { postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	capitalizeText,
 	hexToNumber,
-	prActionText,
 	truncateText,
-} from "../utils";
+} from "../utils/utils";
+
+function prActionText(action: PullRequestAction): string {
+	switch (action) {
+		case "opened":
+			return "opened a pull request";
+		case "reopened":
+			return "reopened a pull request";
+		case "closed":
+			return "closed the pull request";
+		case "synchronize":
+			return "updated the pull request";
+		case "review_requested":
+			return "requested a review";
+		case "ready_for_review":
+			return "marked the pull request as `ready for review`";
+		case "review_request_removed":
+			return "removed a review request";
+	}
+}
 
 export async function handlePullRequest(
 	payload: BaseEventPayload,
@@ -78,9 +100,7 @@ export async function handlePullRequestReview(
 	let reviewColor: number;
 	if (review.state === "approved")
 		reviewColor = hexToNumber(colorList.resolved);
-	else if (review.state === "changes_requested")
-		reviewColor = hexToNumber(colorList.attention);
-	else reviewColor = hexToNumber(colorList.dismissed);
+	else reviewColor = hexToNumber(colorList.attention);
 
 	const reviewPost: DiscordEmbed = {
 		title: `Review State: ${capitalizeText(review.state)}`,

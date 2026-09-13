@@ -1,7 +1,7 @@
-import { ghostUser } from "../constants";
 import type { DiscordEmbed } from "../types/discord";
 import type { GitHubComment } from "../types/github";
-import { truncateText } from "../utils";
+import { ghostUser } from "../utils/constants";
+import { truncateText } from "../utils/utils";
 import { buildAuthor } from "./utils";
 
 export function buildCommentEmbed(
