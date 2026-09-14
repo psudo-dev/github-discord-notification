@@ -20,7 +20,7 @@ export function buildPrContent(
 	payload: BaseEventPayload,
 	url: string,
 	status: string,
-	ghostwriter: string,
+	discordRole: string,
 ): string {
 	const { repository, sender } = basePayloadOrFallback(payload);
 	const content = `
@@ -29,7 +29,7 @@ export function buildPrContent(
 		**Title**: **${noLinkPreview(subject.title, url, true)}**
 		_ _
 		**${noLinkPreview(sender.login, sender.html_url)}** ${status}.
-		${ghostwriter}
+		${discordRole}
 		`;
 	return formatText(content);
 }

@@ -1,4 +1,3 @@
-import type { DiscordMentionsNone } from "../types/discord";
 import type { GitHubRepository, GitHubUser } from "../types/github";
 import type { ColorName } from "../types/types";
 
@@ -39,5 +38,3 @@ export const orphanedRepository: GitHubRepository = {
 	subscribers_count: 0,
 	subscribers_url: page404,
 };
-
-export const allowed_mentions: DiscordMentionsNone = { parse: [] };

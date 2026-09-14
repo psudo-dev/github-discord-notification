@@ -1,8 +1,8 @@
 import { buildAuthor, buildRepositoryField } from "../builders/utils";
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { BaseEventPayload, StarEvent } from "../types/github-events";
-import { allowed_mentions, colorList } from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import { basePayloadOrFallback, hexToNumber } from "../utils/utils";
 
 export async function handleStar(
@@ -11,7 +11,7 @@ export async function handleStar(
 ): Promise<void> {
 	const { repository, sender } = basePayloadOrFallback(payload);
 	let { action, starred_at } = payload as StarEvent;
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	if (!starred_at) starred_at = new Date().toISOString();
 	let content: string;
@@ -19,15 +19,15 @@ export async function handleStar(
 	let color: number;
 
 	if (action === "created") {
-		content = `Your repository **${repository.name}** got a ⭐!\n${ghostwriter}`;
+		content = `Your repository **${repository.name}** got a ⭐!\n${discordRole}`;
 		title = `${repository.name} has ${repository.stargazers_count} stars!`;
 		color = hexToNumber(colorList.star);
 	} else {
-		content = `Your repository **${repository.name}** lost a ⭐\n${ghostwriter}`;
+		content = `Your repository **${repository.name}** lost a ⭐\n${discordRole}`;
 		title = `${repository.name} has \`-1\` star...`;
 		color = hexToNumber(colorList.dismissed);
 	}
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const starsField: DiscordField = {
 		name: "Stars",
@@ -51,5 +51,5 @@ export async function handleStar(
 		},
 	];
 
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }

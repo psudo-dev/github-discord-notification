@@ -1,5 +1,16 @@
 import { handleResponseError } from "../handlers/response-error";
-import type { DiscordPost } from "../types/discord";
+import type {
+	DiscordContent,
+	DiscordEmbed,
+	DiscordMentions,
+	DiscordPost,
+	DiscordRole,
+} from "../types/discord";
+
+export function getDiscordRole(env: Env): DiscordRole {
+	const roleId = env.DISCORD_ROLE_ID;
+	return `<@&${roleId}>`;
+}
 
 export async function fetchToDiscord(
 	body: string,
@@ -13,10 +24,24 @@ export async function fetchToDiscord(
 }
 
 export async function postToDiscord(
-	discordPost: DiscordPost,
+	discordMessage: DiscordContent | DiscordEmbed[],
 	env: Env,
 ): Promise<void> {
-	const body = JSON.stringify(discordPost);
+	const roleId = env.DISCORD_ROLE_ID;
+	const allowed_mentions: DiscordMentions = { parse: [], roles: [roleId] };
+	let post: DiscordPost;
+	if (typeof discordMessage === "string") {
+		post = {
+			content: discordMessage,
+			allowed_mentions,
+		};
+	} else {
+		post = {
+			embeds: discordMessage,
+			allowed_mentions,
+		};
+	}
+	const body = JSON.stringify(post);
 	const url = env.DISCORD_WEBHOOK_URL;
 	let response = await fetchToDiscord(body, url);
 	let retries = 5;

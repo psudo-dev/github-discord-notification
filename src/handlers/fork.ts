@@ -1,12 +1,8 @@
 import { buildAuthor } from "../builders/utils";
 import type { DiscordEmbed, DiscordField } from "../types/discord";
 import type { BaseEventPayload, ForkEvent } from "../types/github-events";
-import {
-	allowed_mentions,
-	colorList,
-	orphanedRepository,
-} from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList, orphanedRepository } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	formatText,
@@ -21,10 +17,10 @@ export async function handleFork(
 	const { repository, sender } = basePayloadOrFallback(payload);
 	let { forkee } = payload as ForkEvent;
 	if (!forkee) forkee = orphanedRepository;
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
-	const content = `**${sender.login}** forked **${repository.full_name}**!\n${ghostwriter}`;
-	await postToDiscord({ content }, env);
+	const content = `**${sender.login}** forked **${repository.full_name}**!\n${discordRole}`;
+	await postToDiscord(content, env);
 
 	const title = `forked ${repository.name}`;
 	const draftDescription = `
@@ -54,5 +50,5 @@ export async function handleFork(
 		},
 	];
 
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }

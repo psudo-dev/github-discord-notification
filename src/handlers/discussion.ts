@@ -1,15 +1,15 @@
 import { buildCommentEmbed } from "../builders/comment";
 import { buildDiscussionEmbed } from "../builders/discussion";
 import { buildAuthor } from "../builders/utils";
-import type { DiscordEmbed, DiscordPost } from "../types/discord";
+import type { DiscordEmbed } from "../types/discord";
 import { commentActions, discussionActions } from "../types/github";
 import type {
 	BaseEventPayload,
 	DiscussionCommentEvent,
 	DiscussionEvent,
 } from "../types/github-events";
-import { allowed_mentions, colorList } from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	formatText,
@@ -26,7 +26,7 @@ export async function handleDiscussion(
 	const { action, answer, discussion } = payload as DiscussionEvent;
 	if (!discussionActions.includes(action)) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const contentAttachment =
 		action === "created" || action === "closed"
@@ -36,10 +36,10 @@ export async function handleDiscussion(
 	**[discussion #${discussion.number}] ${repository.full_name}**
 	_ _
 	The discussion **${noLinkPreview(discussion.title, discussion.html_url, true)}** has been ${contentAttachment} by **${noLinkPreview(sender.login, sender.html_url)}**.
-	${ghostwriter}
+	${discordRole}
 	`;
 	const content = formatText(draftContent);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	let embeds: DiscordEmbed[] = [buildDiscussionEmbed(discussion, repository)];
 	if (answer) {
@@ -53,7 +53,7 @@ export async function handleDiscussion(
 		embeds = [answerEmbed, ...embeds];
 	}
 
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
 
 export async function handleDiscussionComment(
@@ -64,7 +64,7 @@ export async function handleDiscussionComment(
 	const { action, discussion, comment } = payload as DiscussionCommentEvent;
 	if (!commentActions.includes(action)) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const createdOrDeleted =
 		action === "created" ? "commented" : "deleted his comment";
@@ -72,23 +72,20 @@ export async function handleDiscussionComment(
 	**[discussion #${discussion.number}] ${repository.full_name}**
 	_ _
 	**${noLinkPreview(sender.login, sender.html_url)}** ${createdOrDeleted} on **${noLinkPreview(discussion.title, comment.html_url, true)}**.
-	${ghostwriter}
+	${discordRole}
 	`;
 	const content = formatText(draftContent);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const commentColor =
 		action === "created"
 			? hexToNumber(colorList.discussion)
 			: hexToNumber(colorList.dismissed);
 
-	const discordPost: DiscordPost = {
-		embeds: [
-			buildCommentEmbed(comment, createdOrDeleted, commentColor),
-			buildDiscussionEmbed(discussion, repository),
-		],
-		allowed_mentions,
-	};
+	const embeds: DiscordEmbed[] = [
+		buildCommentEmbed(comment, createdOrDeleted, commentColor),
+		buildDiscussionEmbed(discussion, repository),
+	];
 
-	await postToDiscord(discordPost, env);
+	await postToDiscord(embeds, env);
 }

@@ -8,8 +8,8 @@ import type {
 	IssueCommentEvent,
 	IssuesEvent,
 } from "../types/github-events";
-import { allowed_mentions, colorList } from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	formatText,
@@ -25,20 +25,20 @@ export async function handleIssues(
 	const { action, issue } = payload as IssuesEvent;
 	if (!issuesActions.includes(action)) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 	const draftContent = `
 	**[issue #${issue.number}] ${repository.full_name}**
 	_ _
 	The issue **${noLinkPreview(issue.title, issue.html_url, true)}** has been **${action}** by **${noLinkPreview(sender.login, sender.html_url)}**.
-	${ghostwriter}
+	${discordRole}
 	`;
 	const content = formatText(draftContent);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const color = hexToNumber(colorList.issue);
 	const embeds: DiscordEmbed[] = [buildIssueEmbed(issue, repository, color)];
 
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
 
 export async function handleIssueComment(
@@ -49,7 +49,7 @@ export async function handleIssueComment(
 	const { action, issue, comment } = payload as IssueCommentEvent;
 	if (!commentActions.includes(action)) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 	let content: string;
 	let color: number;
 	const createdOrDeleted =
@@ -60,7 +60,7 @@ export async function handleIssueComment(
 		**[issue #${issue.number}] ${repository.full_name}**
 		_ _
 		**${noLinkPreview(sender.login, sender.html_url)}** ${createdOrDeleted} on **${noLinkPreview(issue.title, comment.html_url, true)}**.
-		${ghostwriter}
+		${discordRole}
 		`;
 		content = formatText(draftContent);
 		color = hexToNumber(colorList.issue);
@@ -71,11 +71,11 @@ export async function handleIssueComment(
 			payload,
 			comment.html_url,
 			status,
-			ghostwriter,
+			discordRole,
 		);
 		color = hexToNumber(colorList.pull_request);
 	}
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	let commentColor = color;
 	if (action === "deleted") commentColor = hexToNumber(colorList.dismissed);
@@ -84,5 +84,5 @@ export async function handleIssueComment(
 		buildCommentEmbed(comment, createdOrDeleted, commentColor),
 		buildIssueEmbed(issue, repository, color),
 	];
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }

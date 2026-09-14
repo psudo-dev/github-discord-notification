@@ -61,13 +61,16 @@ export const commentActions = ["created", "deleted"] as const;
 
 export type CommentAction = (typeof commentActions)[number];
 
+export type DiffHunk = string;
+
 export interface GitHubComment {
 	body: string;
 	html_url: string;
+	url: string;
 	issue_url: string;
 	updated_at: string;
 	user: GitHubUser | null;
-	diff_hunk?: string;
+	diff_hunk?: DiffHunk;
 	subject_type?: "line" | "file";
 	line?: number | null;
 	original_line?: number | null;

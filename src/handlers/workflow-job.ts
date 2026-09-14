@@ -12,8 +12,8 @@ import type {
 	WorkflowJobEvent,
 } from "../types/github-events";
 import type { InstallationToken } from "../types/types";
-import { allowed_mentions, colorList } from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	capitalizeText,
@@ -93,7 +93,7 @@ export async function handleWorkflowJob(
 
 	if (action !== "completed") return;
 	if (!workflowJobConclusion.includes(workflow_job.conclusion)) return;
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const relevantSteps: Step[] | undefined = getWorkflowJobSteps(
 		workflow_job.steps,
@@ -117,10 +117,10 @@ export async function handleWorkflowJob(
 	${formattedSteps}
 	_ _
 	Check the **workflow/job**'s page ${noLinkPreview("here", workflow_job.html_url)}!
-	${ghostwriter}
+	${discordRole}
 	`;
 	const content = formatText(contentDraft);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const headerAndPayload: string = generateHeaderAndPayload(env);
 	const jwt: string = await generateJwt(headerAndPayload, env);
@@ -149,6 +149,6 @@ export async function handleWorkflowJob(
 
 	for (let i = 0; i < annotationEmbeds.length; i += 5) {
 		const embeds = annotationEmbeds.slice(i, i + 5);
-		await postToDiscord({ embeds, allowed_mentions }, env);
+		await postToDiscord(embeds, env);
 	}
 }

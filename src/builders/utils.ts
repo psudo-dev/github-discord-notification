@@ -3,7 +3,11 @@ import type {
 	DiscordEmbed,
 	DiscordField,
 } from "../types/discord";
-import type { GitHubRepository, GitHubUser } from "../types/github";
+import type {
+	GitHubComment,
+	GitHubRepository,
+	GitHubUser,
+} from "../types/github";
 import { colorList, ghostUser } from "../utils/constants";
 import { hexToNumber, truncateText } from "../utils/utils";
 
@@ -27,18 +31,16 @@ export function buildAuthor(user: GitHubUser | null): DiscordAuthor {
 	};
 }
 
-export function buildDiffEmbed(
-	diff: string | undefined,
-	timestamp: string,
-): DiscordEmbed[] {
-	if (!diff) return [];
-	const description = `\`\`\`diff\n${truncateText(diff, 2000)}\n\`\`\``;
+export function buildCommentDiffEmbed(comment: GitHubComment): DiscordEmbed[] {
+	const { diff_hunk, updated_at } = comment;
+	if (!diff_hunk) return [];
+	const description = `\`\`\`diff\n${truncateText(diff_hunk, 2000)}\n\`\`\``;
 	return [
 		{
 			title: "pull request review diff:",
 			description,
 			color: hexToNumber(colorList.pull_request),
-			timestamp,
+			timestamp: updated_at,
 		},
 	];
 }

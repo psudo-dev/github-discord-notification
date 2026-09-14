@@ -9,6 +9,11 @@ export interface DiscordAuthor {
 	url: string;
 	icon_url: string;
 }
+
+export type DiscordRole = string;
+
+export type DiscordContent = string;
+
 export interface DiscordEmbed {
 	title?: string;
 	description?: string;
@@ -18,12 +23,13 @@ export interface DiscordEmbed {
 	timestamp?: string;
 }
 
-export interface DiscordMentionsNone {
+export interface DiscordMentions {
 	parse: [];
+	roles: string[];
 }
 
 export interface DiscordPost {
-	content?: string;
+	content?: DiscordContent;
 	embeds?: DiscordEmbed[];
-	allowed_mentions?: DiscordMentionsNone;
+	allowed_mentions?: DiscordMentions;
 }

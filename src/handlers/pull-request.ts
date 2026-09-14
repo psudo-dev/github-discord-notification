@@ -3,7 +3,7 @@ import {
 	buildPrEmbed,
 	buildPrReviewCommentEmbed,
 } from "../builders/pull-request";
-import { buildAuthor, buildDiffEmbed } from "../builders/utils";
+import { buildAuthor, buildCommentDiffEmbed } from "../builders/utils";
 import type { DiscordEmbed } from "../types/discord";
 import {
 	commentActions,
@@ -17,8 +17,8 @@ import type {
 	PullRequestReviewEvent,
 	PullRequestReviewThreadEvent,
 } from "../types/github-events";
-import { allowed_mentions, colorList } from "../utils/constants";
-import { postToDiscord } from "../utils/discord";
+import { colorList } from "../utils/constants";
+import { getDiscordRole, postToDiscord } from "../utils/discord";
 import {
 	basePayloadOrFallback,
 	capitalizeText,
@@ -53,7 +53,7 @@ export async function handlePullRequest(
 	const { action, pull_request } = payload as PullRequestEvent;
 	if (!pullRequestActions.includes(action) || pull_request.draft) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const status = prActionText(action);
 	const content = buildPrContent(
@@ -61,9 +61,9 @@ export async function handlePullRequest(
 		payload,
 		pull_request.html_url,
 		status,
-		ghostwriter,
+		discordRole,
 	);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	let color: number;
 	if (action === "review_requested") color = hexToNumber(colorList.attention);
@@ -74,7 +74,7 @@ export async function handlePullRequest(
 	const embeds: DiscordEmbed[] = [
 		buildPrEmbed(pull_request, repository, color),
 	];
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
 
 export async function handlePullRequestReview(
@@ -85,7 +85,7 @@ export async function handlePullRequestReview(
 	const { action, pull_request, review } = payload as PullRequestReviewEvent;
 	if (action !== "submitted" || review.state === "commented") return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const status = `submitted a pull request review`;
 	const content = buildPrContent(
@@ -93,9 +93,9 @@ export async function handlePullRequestReview(
 		payload,
 		review.html_url,
 		status,
-		ghostwriter,
+		discordRole,
 	);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	let reviewColor: number;
 	if (review.state === "approved")
@@ -115,7 +115,7 @@ export async function handlePullRequestReview(
 		reviewPost,
 		buildPrEmbed(pull_request, repository, color),
 	];
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
 
 export async function handlePullRequestReviewComment(
@@ -127,7 +127,7 @@ export async function handlePullRequestReviewComment(
 		payload as PullRequestReviewCommentEvent;
 	if (!commentActions.includes(action)) return;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const color = hexToNumber(colorList.pull_request);
 	let createdOrDeleted: string;
@@ -148,16 +148,16 @@ export async function handlePullRequestReviewComment(
 		payload,
 		prChangesUrl,
 		status,
-		ghostwriter,
+		discordRole,
 	);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const embeds: DiscordEmbed[] = [
 		buildPrEmbed(pull_request, repository, color),
 		buildPrReviewCommentEmbed(comment, createdOrDeleted, commentColor),
-		...buildDiffEmbed(comment.diff_hunk, comment.updated_at),
+		...buildCommentDiffEmbed(comment),
 	];
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
 
 export async function handlePullRequestReviewThread(
@@ -165,11 +165,11 @@ export async function handlePullRequestReviewThread(
 	env: Env,
 ): Promise<void> {
 	const { repository } = basePayloadOrFallback(payload);
-	const { action, pull_request, thread, updated_at } =
+	const { action, pull_request, thread } =
 		payload as PullRequestReviewThreadEvent;
 	const { comments } = thread;
 
-	const ghostwriter = env.DISCORD_ROLE_ID;
+	const discordRole = getDiscordRole(env);
 
 	const prChangesUrl = `${pull_request.html_url}/changes`;
 	const status = `marked a pull request review thread as ${action}.\nThis thread has **${comments.length} ${comments.length === 1 ? "comment" : "comments"}**`;
@@ -179,9 +179,9 @@ export async function handlePullRequestReviewThread(
 		payload,
 		prChangesUrl,
 		status,
-		ghostwriter,
+		discordRole,
 	);
-	await postToDiscord({ content }, env);
+	await postToDiscord(content, env);
 
 	const threadColor =
 		action === "resolved"
@@ -206,7 +206,7 @@ export async function handlePullRequestReviewThread(
 		buildPrEmbed(pull_request, repository, color),
 		buildPrReviewCommentEmbed(reviewComment, reviewTitle, threadColor),
 		...lastCommentEmbed,
-		...buildDiffEmbed(reviewComment.diff_hunk, updated_at),
+		...buildCommentDiffEmbed(reviewComment),
 	];
-	await postToDiscord({ embeds, allowed_mentions }, env);
+	await postToDiscord(embeds, env);
 }
