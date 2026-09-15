@@ -40,5 +40,6 @@ worker-configuration.d.ts
 # Wrangler Data
 .wrangler/
 
-# dist
+# dist and tests
 dist
+tests
