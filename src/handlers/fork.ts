@@ -22,7 +22,7 @@ export async function handleFork(
 	const content = `**${sender.login}** forked **${repository.full_name}**!\n${discordRole}`;
 	await postToDiscord(content, env);
 
-	const title = `forked ${repository.name}`;
+	const title = "forked your repository:";
 	const draftDescription = `
 	**URL**: ${noLinkPreview(forkee.full_name, forkee.html_url)}
 	**Visibility**: ${repository.private ? "Private" : "Public"}
@@ -32,7 +32,7 @@ export async function handleFork(
 	const fields: DiscordField[] = [
 		{
 			name: "Forked Repository",
-			value: `[${repository.name}](<${repository.html_url}>)`,
+			value: `[${repository.full_name}](<${repository.html_url}>)`,
 		},
 		{
 			name: "Forks Count",

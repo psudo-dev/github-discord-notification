@@ -15,8 +15,6 @@ export interface GitHubRepository {
 	forks_count: number;
 	stargazers_count: number;
 	stargazers_url: string;
-	subscribers_count: number;
-	subscribers_url: string;
 }
 
 export interface GitHubAnswer {

@@ -35,6 +35,4 @@ export const orphanedRepository: GitHubRepository = {
 	forks_count: 0,
 	stargazers_count: 0,
 	stargazers_url: page404,
-	subscribers_count: 0,
-	subscribers_url: page404,
 };
