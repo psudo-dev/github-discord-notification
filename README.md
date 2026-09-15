@@ -2,7 +2,11 @@
 
 ## Overview
 
-This project is a Middleware for a Cloudflare Worker that listens to GitHub Webhook events and sends notifications to a Discord server via Discord Webhook. It supports various GitHub events such as issues, pull requests, discussions, and more. It formats the payload into a Discord messages, allowing for rich notifications in Discord.
+This project is a Middleware for a Cloudflare Worker that listens to GitHub Webhook events and sends notifications to a Discord server via Discord Webhook. The GitHub Webhook comes from a GitHub App that is installed in the GitHub account so it can listen to all selected repositories instead of requiring setting up an individual Webhook for each repository.
+
+## Example
+
+![`pull_request_review_comment` notification example](example.png)
 
 ## Setup
 
@@ -79,7 +83,7 @@ This project is a Middleware for a Cloudflare Worker that listens to GitHub Webh
 - `allowed_mentions` is used to avoid `@everyone` and `@here` mentions in the Discord messages
 - Each event generates two Discord Messages:
   - **content**: a brief summary of the event with the `@mention` to trigger the mobile notification
-  - **embeds**: a more detailed information about the event, including the original post when context is necessary
+  - **embeds**: more detailed information about the event, including the original post when context is necessary
 - The colors used for the `embeds` communicate a mix of `event type` and `semantics` depending on the `event`, `action` or `state`:
   - issue: `#AB80FF`
   - pull_request: `#FF4AC3`
@@ -101,7 +105,7 @@ This project is a Middleware for a Cloudflare Worker that listens to GitHub Webh
 ## Known issues
 
 - `comment.diff_hunk` behavior is inconsistent in both `GitHub Webview` and `GitHub API`, some `pull_request_review_comment` and `pull_request_review_thread` linked to some lines will show the `diff` and some others will not. It's also a completely arbitrary behavior, I thought it could be due to a line that changed and one that didn't, but it happens in both cases.
-- `ctx.waitUntil()` can cancel some processes when multiple events are triggered at once. In my case it only happens when there are multiple pending comments in a review and the user submits the review. That triggers `pull_request_review` - which is filtered - and one `pull_request_review_comment` for each pending comment. Which ends up working in my favor because I don't want to receive all the comments of the same thread at once, ideally, I would receive only the first comment of the bunch, but that's something I can't filter for.
+- `ctx.waitUntil()` can cancel some processes when multiple events are triggered at once due to the free account limitations. In my case it only happens when there are multiple pending comments in a review and the user submits the review. That triggers `pull_request_review` - which is filtered - and one `pull_request_review_comment` for each pending comment. This ends up working in my favor because I don't want to receive all the comments of the same thread at once, ideally, I would receive only the first comment of the bunch, but that's something I can't filter for.
 
 ## Context
 
@@ -113,7 +117,7 @@ The problem is that GitHub notifications have always been a bit inconsistent. As
 
 Since I'm a first timer when it comes to Cloudflare Workers, GitHub and Discord Webhooks, there sure was a lot of learning involved in this project. Most of it came down to the authentication and authorization process (for the webhook but also for the GitHub API), which was a bit overwhelming, and understanding in details the GitHub Webhook events and payloads and how to format them into a Discord message.
 
-The most annoying part was deciding which GitHub events and informations were relevant, what events could only be triggered by other users, and deciding how to design and format the Discord messages for each event, `action` and `state`. I had to constantly check and update the specsheet I created while keeping all the documentations opened to crosscheck something I might have missed.
+The most annoying part was deciding which GitHub events and informations were relevant, what events could only be triggered by other users, and deciding how to design and format the Discord messages for each `event`, `action` and `state`. I had to constantly check and update the specsheet I created while keeping all the documentations opened to crosscheck something I might have missed.
 
 Getting the Discord messages to look right in terms of content and formatting almost drove me crazy, a lot of trial and error, tons of testing. I thank a lot the existence of [Discohook](https://discohook.app) because it helped me a lot to prototype the Discord messages and better understand the Discord Webhook payload.
 
