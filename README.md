@@ -109,7 +109,7 @@ This project is a Middleware for a Cloudflare Worker that listens to GitHub Webh
 
 ## Context
 
-I've recently learned the basics of GitHub Actions, so my fork of the TypeScript TmLanguage project for the [Nebula Oni Theme](https://github.com/psudo-dev/nebula-oni-theme), a VSCode Color Theme, can be automatically updated with the upstream repository and create an `issue` if any relevant changes are detected.
+I've recently learned the basics of GitHub Actions, so my fork of the TypeScript TmLanguage project for the [Nebula Oni Theme](https://github.com/psudo-dev/nebula-oni-theme), a VSCode Color Theme, can be automatically updated with the upstream repository and create an `issue` if any relevant changes are detected. When I tested it, I didn't receive the notification.
 
 The problem is that GitHub notifications have always been a bit inconsistent. As I was doing research I've found out that using Discord Webhooks was a nice way to get custom notifications for GitHub events. Of all options Cloudflare Workers seemed as the more straight forward option for my use case.
 
