@@ -19,12 +19,12 @@ export async function handleStar(
 	let color: number;
 
 	if (action === "created") {
-		content = `Your repository **${repository.name}** got a ⭐!\n${discordRole}`;
-		title = `${repository.name} has ${repository.stargazers_count} stars!`;
+		content = `Your repository **${repository.full_name}** got a ⭐!\n${discordRole}`;
+		title = `${repository.full_name} has ${repository.stargazers_count} stars!`;
 		color = hexToNumber(colorList.star);
 	} else {
-		content = `Your repository **${repository.name}** lost a ⭐\n${discordRole}`;
-		title = `${repository.name} has \`-1\` star...`;
+		content = `Your repository **${repository.full_name}** lost a ⭐\n${discordRole}`;
+		title = `${repository.full_name} has \`-1\` star...`;
 		color = hexToNumber(colorList.dismissed);
 	}
 	await postToDiscord(content, env);
