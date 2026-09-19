@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a Middleware for a Cloudflare Worker that listens to GitHub Webhook events and sends notifications to a Discord server via Discord Webhook. The GitHub Webhook comes from a GitHub App that is installed in the GitHub account so it can listen to all selected repositories instead of requiring setting up an individual Webhook for each repository.
+This project is a middleware for a Cloudflare Worker that listens to GitHub Webhook events and sends notifications to a Discord server via Discord Webhook. The GitHub Webhook comes from a GitHub App that is installed in the GitHub account so it can listen to all selected repositories instead of requiring setting up an individual Webhook for each repository.
 
 ## Example
 
@@ -102,7 +102,7 @@ This project is a Middleware for a Cloudflare Worker that listens to GitHub Webh
 - Wrangler
 - Bun
 
-## Known issues
+## Some Quirks
 
 - `comment.diff_hunk` behavior is inconsistent in both `GitHub Webview` and `GitHub API`, some `pull_request_review_comment` and `pull_request_review_thread` linked to some lines will show the `diff` and some others will not. It's also a completely arbitrary behavior, I thought it could be due to a line that changed and one that didn't, but it happens in both cases.
 - `ctx.waitUntil()` can cancel some processes when multiple events are triggered at once due to the free account limitations. In my case it only happens when there are multiple pending comments in a review and the user submits the review. That triggers `pull_request_review` - which is filtered - and one `pull_request_review_comment` for each pending comment. This ends up working in my favor because I don't want to receive all the comments of the same thread at once, ideally, I would receive only the first comment of the bunch, but that's something I can't filter for.
