@@ -24,10 +24,13 @@ export function buildAuthor(user: GitHubUser | null): DiscordAuthor {
 	let safeUser: GitHubUser;
 	if (!user) safeUser = ghostUser;
 	else safeUser = user;
+
+	const separator = safeUser.avatar_url.includes("?") ? "&" : "?";
+
 	return {
 		name: safeUser.login,
 		url: safeUser.html_url,
-		icon_url: `${safeUser.avatar_url}&uncache=${Date.now()}`,
+		icon_url: `${safeUser.avatar_url}${separator}uncache=${Date.now()}`,
 	};
 }
 
