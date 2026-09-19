@@ -27,7 +27,7 @@ export function buildAuthor(user: GitHubUser | null): DiscordAuthor {
 	return {
 		name: safeUser.login,
 		url: safeUser.html_url,
-		icon_url: safeUser.avatar_url,
+		icon_url: `${safeUser.avatar_url}&uncache=${Date.now()}`,
 	};
 }
 
